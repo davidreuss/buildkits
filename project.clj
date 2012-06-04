@@ -10,5 +10,6 @@
                  [cheshire "4.0.0"]
                  [hiccup "1.0.0"]
                  [postgresql "9.1-901-1.jdbc4"]
+                 [org.clojars.technomancy/osmosis-hstore "0.2"]
                  [org.clojure/java.jdbc "0.2.1"]
                  [com.heroku.api/heroku-api "0.9"]])
