@@ -1,20 +1,23 @@
 (ns buildkits.buildpacks
   (:refer-clojure :exclude [delete remove])
-  (:require [hiccup.page :refer [html5 include-css]]
+  (:require [hiccup.page :refer [html5 include-css include-js]]
             [buildkits.db :as db]))
 
 (defn layout [body]
-  (html5
+  (html5 {:lang "en"}
    [:head
     [:meta {:charset "utf-8"}]
     [:title "Build Kits"]
-    ;; include-css
-    ]
+    (include-css "css/bootstrap-responsive.min.css")
+    (include-css "css/bootstrap.min.css")
+    (include-css "css/buildkits.css")
+    (include-js "js/bootstrap.min.js")]
    [:body
-    [:div#header
-     [:h1
-      [:a {:href "/"} "Build Kits"]]]
-    [:div#content body]]))
+    [:div.container
+     [:div.offset3
+      [:h1
+       [:a {:href "/"} "Build Kits"]]]
+     [:div.span8.offset2 body]]]))
 
 (defn rating [ratings]
   (float (/ (apply + ratings) (count ratings))))
@@ -27,7 +30,7 @@
                    :author "Phil Hagelberg"
                    :ratings [5 4 5]}]
     [:div#buildpack
-     [:h5 [:a {:href (:url buildpack)} buildpack-name]]
+     [:h4 [:a {:href (:url buildpack)} buildpack-name]]
      [:p#desc (:description buildpack)]
      [:p#author (str "By " (:author buildpack))]
      [:p#license (str "Licensed under: " (:license buildpack))]

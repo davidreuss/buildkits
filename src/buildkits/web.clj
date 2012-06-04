@@ -3,6 +3,7 @@
             [ring.middleware.params :as params]
             [ring.middleware.keyword-params :as keyword-params]
             [ring.middleware.nested-params :as nested-params]
+            [ring.middleware.resource :as resource]
             [cemerick.friend :as friend]
             [cemerick.friend.workflows :as workflows]
             [cemerick.friend.credentials :as creds]
@@ -31,5 +32,8 @@
 
 (defn -main [& [port]]
   (let [port (Integer. (or port (System/getenv "PORT")))]
-    (jetty/run-jetty (handler/site (wrap-dummy-login app "technomancy"))
+    (jetty/run-jetty (-> #'app
+                         (wrap-dummy-login "technomancy")
+                         (resource/wrap-resource "static")
+                         (handler/site))
                      {:port port :join? false})))
