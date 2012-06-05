@@ -9,8 +9,20 @@ Select from available Build Packs to build up your own build kit.
 - Author
 - URL
 - License
-- Forked
-- Rating
+
+## Running
+
+    # Database first:
+    $ initdb pg && postgres -D pg
+    $ createdb buildkits
+    $ lein run -m buildkits.db/migrate
+    $ lein run -m buildkits.db/insert-dummy-data # optional
+
+You may need to add `/usr/lib/postgresql/$PG_VERSION/bin` to your
+`$PATH` first on Debian-based systems. You'll also need a new enough
+version of PostgreSQL to have HStore support.
+
+    $ lein run -m buildkits.web
 
 ## License
 

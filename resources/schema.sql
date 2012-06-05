@@ -9,12 +9,7 @@ CREATE TABLE buildpacks (
    );
 
 CREATE TABLE kits (
-     name varchar PRIMARY KEY,
-     buildpacks hstore
-   );
-
-CREATE TABLE ratings (
-     id serial PRIMARY KEY,
-     rater varchar,
-     buildpack varchar
+     kit varchar,
+     buildpack_name varchar,
+     position integer
    );

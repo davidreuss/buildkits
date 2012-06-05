@@ -1,4 +1,5 @@
 (ns buildkits.db
+  (:refer-clojure :exclude [flatten])
   (:require [cemerick.friend.credentials :as creds]
             [clojure.java.jdbc :as sql]
             [clojure.java.io :as io]
@@ -17,22 +18,24 @@
              [k (if (instance? PGHStore v)
                   (walk/keywordize-keys (into {} v)) v)])))
 
+(defn flatten [buildpack]
+  (assoc (:attributes buildpack) :name (:name buildpack)))
+
 (defn get-buildpack [buildpack-name]
   (sql/with-query-results [b] ["select * from buildpacks where name = ?"
                                buildpack-name]
-    (let [buildpack (unhstore b)]
-      (assoc (:attributes buildpack) :name (:name buildpack)))))
+    (flatten (unhstore b))))
 
 (defn get-buildpacks []
-  (sql/with-query-results bs ["select * from buildpacks"]
-    (doall (for [buildpack (map unhstore bs)]
-             (assoc (:attributes buildpack) :name (:name buildpack))))))
+  (sql/with-query-results buildpacks ["select * from buildpacks"]
+    (mapv (comp flatten unhstore) buildpacks)))
 
 (defn get-kit [name]
-  (sql/with-query-results [kit] ["select * from kits where name = ?" name]
-    (let [packs (unhstore (:buildpacks kit))]
-      (for [x (range (count (:buildpacks kit)))]
-        (get-buildpack (get (:buildpacks kit) (str x)))))))
+  (sql/with-query-results buildpacks
+    [(str "select buildpacks.* from buildpacks, kits"
+          " where kits.kit = ? AND "
+          "buildpacks.name = kits.buildpack_name ORDER BY kits.position") name]
+    (mapv (comp flatten unhstore) buildpacks)))
 
 (defn migrate []
   (sql/with-connection db
@@ -44,6 +47,6 @@
                                (slurp (io/resource "buildpacks.clj")))]
       (sql/insert-values :buildpacks [:name :attributes]
                          [name (hstore attributes)]))
-    (sql/insert-values :kits [:name :buildpacks]
-                       ["jvm-fancy" (hstore ["clojure-lein2" "java-openjdk7"
-                                             "java"])])))
+    (doall (map-indexed #(sql/insert-values :kits [:kit :buildpack_name :position]
+                                            ["jvm-fancy" %2 %1])
+                        ["clojure-lein2" "java-openjdk7" "java"]))))
