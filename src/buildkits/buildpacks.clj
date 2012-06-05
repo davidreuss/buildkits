@@ -22,7 +22,7 @@
       (throw (Exception. (:err res))))
     path))
 
-(defn tar-dir [path target]
+(defn tgz-dir [path target]
   (with-open [out (-> (FileOutputStream. target)
                       (BufferedOutputStream.)
                       (GzipCompressorOutputStream.)
@@ -33,6 +33,8 @@
           (let [relative (.replace (str f) (str path) "")
                 entry (TarArchiveEntry. relative)]
             (.setSize entry (.length f))
+            (when (.canExecute f)
+              (.setMode entry 0755))
             (.putArchiveEntry out entry)
             (io/copy (io/input-stream f) out)
             (.closeArchiveEntry out))))
@@ -47,8 +49,9 @@
       (check-out buildpack path))
     (.mkdirs (io/file path "bin"))
     (doseq [script ["bin/detect" "bin/compile" "bin/release"]]
-      (io/copy (.openStream (io/resource script)) (io/file path script)))
-    (tar-dir path target)))
+      (io/copy (.openStream (io/resource script)) (io/file path script))
+      (.setExecutable (io/file path script) true))
+    (tgz-dir path target)))
 
 (defn composed-kit [name kit]
   ;; TODO: Still a race condition here
