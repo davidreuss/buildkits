@@ -19,6 +19,11 @@
   (GET "/" {session :session}
        (sql/with-connection db/db
          (html/dashboard (db/get-buildpacks))))
+  (GET "/buildkit/:name.tgz" [name]
+       (sql/with-connection db/db
+         {:status 200
+          :headers {"Content-Type" "application/octet-stream"}
+          :body (buildpacks/compose name (db/get-kit name))}))
   (PUT "/kit/:buildpack/:position" {:keys [session buildpack position]}
        (buildpacks/add session buildpack position))
   (DELETE "/kit/:buildpack" {:keys [session buildpack]}

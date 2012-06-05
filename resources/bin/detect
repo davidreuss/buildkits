@@ -1,0 +1,19 @@
+#!/bin/sh
+
+BUILDPACKS_DIR="$(dirname $0)/../buildpacks"
+DETECT_NAME="Buildkit"
+DETECTED_BUILDPACKS="$1/.detected_buildpacks"
+
+rm -f $DETECTED_BUILDPACKS
+touch $DETECTED_BUILDPACKS
+
+for BUILDPACK in $(ls -1 $BUILDPACKS_DIR); do
+  NAME=$($BUILDPACKS_DIR/$BUILDPACK/bin/detect $1)
+
+  if [ $? -eq 0 ]; then
+    echo "$BUILDPACKS_DIR/$BUILDPACK:$NAME" >> $DETECTED_BUILDPACKS
+    DETECT_NAME="$DETECT_NAME+$NAME"
+  fi
+done
+
+echo $DETECT_NAME

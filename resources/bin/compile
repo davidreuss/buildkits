@@ -1,0 +1,12 @@
+#!/bin/sh
+
+BUILDPACKS_DIR="$(dirname $0)/../buildpacks"
+DETECTED_BUILDPACKS="$1/.detected_buildpacks"
+
+cat $DETECTED_BUILDPACKS | while read BUILDPACK_AND_NAME; do
+  BUILDPACK=${BUILDPACK_AND_NAME%%:*}
+  NAME=${BUILDPACK_AND_NAME#*:}
+  echo "-----> Compiling for ${NAME}"
+  cd $1
+  $BUILDPACK/bin/compile $1 $2
+done

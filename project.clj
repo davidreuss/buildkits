@@ -12,4 +12,5 @@
                  [postgresql "9.1-901-1.jdbc4"]
                  [org.clojars.technomancy/osmosis-hstore "0.2"]
                  [org.clojure/java.jdbc "0.2.1"]
-                 [com.heroku.api/heroku-api "0.9"]])
+                 [com.heroku.api/heroku-api "0.9"]
+                 [org.apache.commons/commons-compress "1.4.1"]])
