@@ -18,7 +18,7 @@
 (defroutes app
   (GET "/" {session :session}
        (sql/with-connection db/db
-         (html/dashboard (db/get-buildpacks))))
+         (html/dashboard (db/get-buildpacks) "jvm-fancy")))
   (GET "/buildkit/:name.tgz" [name]
        (sql/with-connection db/db
          {:status 200

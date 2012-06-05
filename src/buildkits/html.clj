@@ -18,12 +18,14 @@
      [:div.span8.offset2 body]]]))
 
 (defn render [buildpack]
-  (prn :rendering buildpack)
   [:div#buildpack
    [:h4 [:a {:href (:url buildpack)} (:name buildpack)]]
    [:p#desc (:description buildpack)]
    [:p#author (str "By " (:author buildpack))]
    [:p#license (str "Licensed under: " (:license buildpack))]])
 
-(defn dashboard [buildpacks]
-  (layout [:div#buildpacks (map render buildpacks)]))
+(defn dashboard [buildpacks kit-name]
+  (layout [:div
+           [:div#buildpacks (map render buildpacks)]
+           [:p.download [:a {:href (str "/buildkit/" kit-name ".tgz")}
+                         "Your kit"]]]))
