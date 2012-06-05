@@ -41,10 +41,9 @@
   (sql/with-connection db
     (apply sql/do-commands (.split (slurp (io/resource "schema.sql")) ";"))))
 
-(defn insert-dummy-data []
+(defn insert-dummy-data [filename]
   (sql/with-connection db
-    (doseq [[name attributes] (read-string
-                               (slurp (io/resource "buildpacks.clj")))]
+    (doseq [[name attributes] (read-string (slurp filename))]
       (sql/insert-values :buildpacks [:name :attributes]
                          [name (hstore attributes)]))
     (doall (map-indexed #(sql/insert-values :kits [:kit :buildpack_name :position]

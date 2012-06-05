@@ -16,7 +16,7 @@ Select from available Build Packs to build up your own build kit.
     $ initdb pg && postgres -D pg
     $ createdb buildkits
     $ lein run -m buildkits.db/migrate
-    $ lein run -m buildkits.db/insert-dummy-data # optional
+    $ lein run -m buildkits.db/insert-dummy-data dev-resources/buildpacks.clj # optional
 
 You may need to add `/usr/lib/postgresql/$PG_VERSION/bin` to your
 `$PATH` first on Debian-based systems. You'll also need a new enough
