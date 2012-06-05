@@ -10,12 +10,15 @@
             [compojure.core :refer [defroutes GET PUT POST DELETE]]
             [compojure.route :as route]
             [compojure.handler :as handler]
+            [clojure.java.jdbc :as sql]
             [buildkits.db :as db]
+            [buildkits.html :as html]
             [buildkits.buildpacks :as buildpacks]))
 
 (defroutes app
   (GET "/" {session :session}
-       (buildpacks/dashboard session))
+       (sql/with-connection db/db
+         (html/dashboard (db/get-buildpacks))))
   (PUT "/kit/:buildpack/:position" {:keys [session buildpack position]}
        (buildpacks/add session buildpack position))
   (DELETE "/kit/:buildpack" {:keys [session buildpack]}
@@ -26,14 +29,9 @@
        (buildpacks/create session buildpack))
   (route/not-found "Not found"))
 
-(defn wrap-dummy-login [f user]
-  (fn [req]
-    (f (update-in req [:session] assoc :user user))))
-
 (defn -main [& [port]]
   (let [port (Integer. (or port (System/getenv "PORT")))]
     (jetty/run-jetty (-> #'app
-                         (wrap-dummy-login "technomancy")
                          (resource/wrap-resource "static")
                          (handler/site))
                      {:port port :join? false})))

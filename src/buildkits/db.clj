@@ -1,7 +1,8 @@
 (ns buildkits.db
   (:require [cemerick.friend.credentials :as creds]
             [clojure.java.jdbc :as sql]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.walk :as walk])
   (:import (org.openstreetmap.osmosis.hstore PGHStore)))
 
 (def db (or (System/getenv "DATABASE_URL") "postgres://localhost:5432/buildkits"))
@@ -14,12 +15,18 @@
 (defn unhstore [h]
   (into {} (for [[k v] h]
              [k (if (instance? PGHStore v)
-                  (into {} v) v)])))
+                  (walk/keywordize-keys (into {} v)) v)])))
 
 (defn get-buildpack [buildpack-name]
   (sql/with-query-results [b] ["select * from buildpacks where name = ?"
                                buildpack-name]
-    (unhstore b)))
+    (let [buildpack (unhstore b)]
+      (assoc (:attributes buildpack) :name (:name buildpack)))))
+
+(defn get-buildpacks []
+  (sql/with-query-results bs ["select * from buildpacks"]
+    (doall (for [buildpack (map unhstore bs)]
+             (assoc (:attributes buildpack) :name (:name buildpack))))))
 
 (defn get-kit [name]
   (sql/with-query-results [kit] ["select * from kits where name = ?" name]
