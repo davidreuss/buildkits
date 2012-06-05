@@ -23,7 +23,7 @@
        (sql/with-connection db/db
          {:status 200
           :headers {"Content-Type" "application/octet-stream"}
-          :body (buildpacks/compose name (db/get-kit name))}))
+          :body (buildpacks/composed-kit name (db/get-kit name))}))
   (PUT "/kit/:buildpack/:position" {:keys [session buildpack position]}
        (buildpacks/add session buildpack position))
   (DELETE "/kit/:buildpack" {:keys [session buildpack]}

@@ -30,7 +30,7 @@
     (try ; with-open swallows exceptions here
       (doseq [f (file-seq (io/file path))]
         (when-not (.isDirectory f)
-          (let [relative (.replace (str f) path "")
+          (let [relative (.replace (str f) (str path) "")
                 entry (TarArchiveEntry. relative)]
             (.setSize entry (.length f))
             (.putArchiveEntry out entry)
@@ -41,17 +41,21 @@
         (throw e))))
   (io/file target))
 
-(defn compose [name kit]
-  (prn :compose name)
-  ;; TODO: race conditions here of course
-  (let [path (str work-dir "/" name)
-        target (str path ".tgz")]
+(defn compose [name kit target]
+  (let [path (str work-dir "/" name)]
     (doseq [buildpack kit]
-        (check-out buildpack path))
+      (check-out buildpack path))
     (.mkdirs (io/file path "bin"))
     (doseq [script ["bin/detect" "bin/compile" "bin/release"]]
       (io/copy (.openStream (io/resource script)) (io/file path script)))
     (tar-dir path target)))
+
+(defn composed-kit [name kit]
+  ;; TODO: Still a race condition here
+  (let [file (io/file work-dir (str name ".tgz"))]
+    (if (.exists file)
+      file
+      (compose name kit file))))
 
 ;; crud stuff
 
