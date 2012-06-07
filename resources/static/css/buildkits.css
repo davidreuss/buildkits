@@ -1,0 +1,4 @@
+/* I don't want a nav bar, and bootstrap places everything too high otherwise. Whatever. */
+body {
+    margin: 1em;
+}
