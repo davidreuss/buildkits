@@ -1,8 +1,5 @@
 (ns buildkits.web
   (:require [ring.adapter.jetty :as jetty]
-            [ring.middleware.params :as params]
-            [ring.middleware.keyword-params :as keyword-params]
-            [ring.middleware.nested-params :as nested-params]
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.resource :as resource]
             [ring.util.response :as res]
@@ -15,7 +12,7 @@
             [clojure.data.codec.base64 :as base64]
             [buildkits.db :as db]
             [buildkits.html :as html]
-            [buildkits.buildpacks :as buildpacks]))
+            [buildkits.kit :as kit]))
 
 (defn get-token [code]
   (->> (http/post "https://github.com/login/oauth/access_token"
@@ -43,7 +40,7 @@
        (sql/with-connection db/db
          {:status 200
           :headers {"Content-Type" "application/octet-stream"}
-          :body (buildpacks/composed-kit name (db/get-kit name))}))
+          :body (kit/composed-kit name (db/get-kit name))}))
   (GET "/oauth" [code]
        (assoc (res/redirect "/")
          :session {:username (get-username (get-token code))}))
@@ -65,7 +62,7 @@
         (let [auth (get (:headers req) "authorization")
               basic (base64/decode (.getBytes (second (.split auth " "))))
               [username key] (.split (String. basic) ":")]
-          (if true #_(check-api-key username key)
+          (if (check-api-key username key)
             (sql/with-connection db/db
               (db/create username name buildpack)
               {:status 201})

@@ -1,4 +1,4 @@
-(ns buildkits.buildpacks
+(ns buildkits.kit
   (:refer-clojure :exclude [delete remove])
   (:require [hiccup.page :refer [html5 include-css include-js]]
             [compojure.core :refer [defroutes GET PUT POST DELETE]]
