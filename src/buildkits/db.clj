@@ -8,9 +8,7 @@
 (def db (or (System/getenv "DATABASE_URL") "postgres://localhost:5432/buildkits"))
 
 (defn hstore [m]
-  (PGHStore. (if (vector? m)
-               (zipmap (range (count m)) m)
-               (zipmap (map name (keys m)) (vals m)))))
+  (PGHStore. (zipmap (map name (keys m)) (vals m))))
 
 (defn unhstore [h]
   (into {} (for [[k v] h]
@@ -18,7 +16,8 @@
                   (walk/keywordize-keys (into {} v)) v)])))
 
 (defn flatten [buildpack]
-  (assoc (:attributes buildpack) :name (:name buildpack)))
+  (merge (dissoc buildpack :attributes)
+         (:attributers buildpack)))
 
 (defn get-buildpack [buildpack-name]
   (sql/with-query-results [b] ["select * from buildpacks where name = ?"
@@ -26,7 +25,7 @@
     (flatten (unhstore b))))
 
 (defn get-buildpacks []
-  (sql/with-query-results buildpacks ["select * from buildpacks"]
+  (sql/with-query-results buildpacks ["select name, attributes from buildpacks"]
     (mapv (comp flatten unhstore) buildpacks)))
 
 (defn get-kit [name]
@@ -43,15 +42,19 @@
 (defn remove-from-kit [name buildpack]
   (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))
 
+;; why is this not in clojure.java.io?
+(defn- get-bytes [file]
+  (let [baos (java.io.ByteArrayOutputStream.)]
+    (io/copy file baos)
+    (.delete file)
+    (.toByteArray baos)))
+
+(defn create [username buildpack-name content]
+  (sql/insert-record :buildpacks {:name buildpack-name
+                                  :tarball (get-bytes (:tempfile content))
+                                  ;; TODO: design buildpack manifest
+                                  :attributes (hstore {})}))
+
 (defn migrate []
   (sql/with-connection db
     (apply sql/do-commands (.split (slurp (io/resource "schema.sql")) ";"))))
-
-(defn insert-dummy-data [filename]
-  (sql/with-connection db
-    (doseq [[name attributes] (read-string (slurp filename))]
-      (sql/insert-values :buildpacks [:name :attributes]
-                         [name (hstore attributes)]))
-    (doall (map-indexed #(sql/insert-values :kits [:kit :buildpack_name :position]
-                                            ["jvm-fancy" %2 %1])
-                        ["clojure-lein2" "java-openjdk7" "java"]))))

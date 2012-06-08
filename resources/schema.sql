@@ -5,11 +5,12 @@ CREATE EXTENSION hstore;
 
 CREATE TABLE buildpacks (
      name varchar PRIMARY KEY,
+     tarball bytea NOT NULL,
      attributes hstore
    );
 
 CREATE TABLE kits (
-     kit varchar,
-     buildpack_name varchar,
-     position integer
+     kit varchar PRIMARY KEY,
+     buildpack_name varchar NOT NULL,
+     position integer NOT NULL
    );

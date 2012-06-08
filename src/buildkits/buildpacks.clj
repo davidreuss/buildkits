@@ -3,6 +3,7 @@
   (:require [hiccup.page :refer [html5 include-css include-js]]
             [compojure.core :refer [defroutes GET PUT POST DELETE]]
             [buildkits.db :as db]
+            [cheshire.core :as json]
             [clojure.java.shell :as sh]
             [clojure.java.io :as io])
   (:import (java.io File BufferedOutputStream FileOutputStream)
@@ -60,15 +61,3 @@
     (if (.exists file)
       file
       (compose name kit file))))
-
-;; crud stuff
-
-(defn create [session params])
-
-(defn delete [session buildpack-name])
-
-(defroutes app
-  (PUT "/:buildpack" {params :params session :session}
-       (create session params))
-  (DELETE "/:buildpack" {session :session buildpack :buildpack}
-          (delete session buildpack)))
