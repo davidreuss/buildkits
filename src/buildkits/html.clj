@@ -1,5 +1,6 @@
 (ns buildkits.html
-  (:require [hiccup.page :refer [html5 include-css include-js]]))
+  (:require [hiccup.page :refer [html5 include-css include-js]]
+            [hiccup.form :refer [form-to submit-button]]))
 
 (defn layout [body username]
   (html5 {:lang "en"}
@@ -18,23 +19,34 @@
         [:a {:href "/"} "Build Kits"]]]
       [:div.span3
        (if username
-         [:p "Logged in as " username "."]
+         [:p "Logged in as " username ". "
+          [:a {:href "/logout"} "Log out"] "."]
          [:p [:a {:href (str "https://github.com/login/oauth/authorize?"
                              "client_id=4e138466e2422c3e0524")}
               "Log in"]])]]
      [:div.row
       [:div.span8.offset2 body]]]]))
 
-(defn render [buildpack]
+(defn toggle [kit buildpack]
+  [:div.toggle
+   (if (some #(= (:name buildpack) (:name %)) kit)
+     ;; TODO: support sorting
+     (form-to [:delete (format "/kit/%s" (:name buildpack))]
+              (submit-button "remove"))
+     (form-to [:put (format "/kit/%s/%s" (:name buildpack) 0)]
+              (submit-button "add")))])
+
+(defn render [kit buildpack]
   [:div#buildpack
+   (if kit (toggle kit buildpack))
    [:h4 [:a {:href (:url buildpack)} (:name buildpack)]]
    [:p#desc (:description buildpack)]
    [:p#author (str "By " (:author buildpack))]
    [:p#license (str "Licensed under: " (:license buildpack))]])
 
-(defn dashboard [buildpacks username]
+(defn dashboard [buildpacks username kit]
   (layout [:div
-           [:div#buildpacks (map render buildpacks)]
+           [:div#buildpacks (map (partial render kit) buildpacks)]
            (if username
              [:p.download [:a {:href (str "/buildkit/" username ".tgz")}
                            "Your kit"]])]

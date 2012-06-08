@@ -31,11 +31,18 @@
     (mapv (comp flatten unhstore) buildpacks)))
 
 (defn get-kit [name]
-  (sql/with-query-results buildpacks
-    [(str "select buildpacks.* from buildpacks, kits"
-          " where kits.kit = ? AND "
-          "buildpacks.name = kits.buildpack_name ORDER BY kits.position") name]
-    (mapv (comp flatten unhstore) buildpacks)))
+  (if name
+    (sql/with-query-results buildpacks
+      [(str "select buildpacks.* from buildpacks, kits"
+            " where kits.kit = ? AND "
+            "buildpacks.name = kits.buildpack_name ORDER BY kits.position") name]
+      (mapv (comp flatten unhstore) buildpacks))))
+
+(defn add-to-kit [name buildpack position]
+  (sql/insert-record :kits {:kit name :buildpack_name buildpack}))
+
+(defn remove-from-kit [name buildpack]
+  (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))
 
 (defn migrate []
   (sql/with-connection db

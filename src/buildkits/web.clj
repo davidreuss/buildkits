@@ -35,7 +35,7 @@
   (GET "/" {identity :identity {username :username} :session :as req}
        (prn req)
        (sql/with-connection db/db
-         (html/dashboard (db/get-buildpacks) username)))
+         (html/dashboard (db/get-buildpacks) username (db/get-kit username))))
   (GET "/buildkit/:name.tgz" [name]
        (sql/with-connection db/db
          {:status 200
@@ -46,10 +46,14 @@
          :session {:username (get-username (get-token code))}))
   (GET "/logout" []
        (assoc (res/redirect "/") :session nil))
-  (PUT "/kit/:buildpack/:position" {:keys [session buildpack position]}
-       (buildpacks/add session buildpack position))
-  (DELETE "/kit/:buildpack" {:keys [session buildpack]}
-          (buildpacks/remove session buildpack))
+  (PUT "/kit/:buildpack/:pos" [buildpack pos :as {{:keys [username]} :session}]
+       (sql/with-connection db/db
+         (db/add-to-kit username buildpack pos))
+       (res/redirect "/"))
+  (DELETE "/kit/:buildpack" [buildpack :as {{:keys [username]} :session}]
+          (sql/with-connection db/db
+            (db/remove-from-kit username buildpack))
+          (res/redirect "/"))
   (route/not-found "Not found"))
 
 (defn -main [& [port]]

@@ -63,10 +63,6 @@
 
 ;; crud stuff
 
-(defn add [session buildpack-name position])
-
-(defn remove [session buildpack-name])
-
 (defn create [session params])
 
 (defn delete [session buildpack-name])
