@@ -1,7 +1,6 @@
 (ns buildkits.db
   (:refer-clojure :exclude [flatten])
-  (:require [cemerick.friend.credentials :as creds]
-            [clojure.java.jdbc :as sql]
+  (:require [clojure.java.jdbc :as sql]
             [clojure.java.io :as io]
             [clojure.walk :as walk])
   (:import (org.openstreetmap.osmosis.hstore PGHStore)))

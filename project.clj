@@ -6,7 +6,6 @@
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [ring/ring-jetty-adapter "1.1.0"]
                  [compojure "1.1.0"]
-                 [com.cemerick/friend "0.0.9"]
                  [cheshire "4.0.0"]
                  [clj-http "0.4.2"]
                  [hiccup "1.0.0"]

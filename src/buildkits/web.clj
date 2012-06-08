@@ -6,9 +6,6 @@
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.resource :as resource]
             [ring.util.response :as res]
-            [cemerick.friend :as friend]
-            [cemerick.friend.workflows :as workflows]
-            [cemerick.friend.credentials :as creds]
             [clj-http.client :as http]
             [cheshire.core :as json]
             [compojure.core :refer [defroutes GET PUT POST DELETE]]
@@ -23,17 +20,15 @@
   (->> (http/post "https://github.com/login/oauth/access_token"
                   {:form-params {:client_id "4e138466e2422c3e0524"
                                  :client_secret (System/getenv "OAUTH_CLIENT_SECRET")
-
                                  :code code}})
-      (:body) (re-find #"access_token=([^&]+)") (second)))
+       (:body) (re-find #"access_token=([^&]+)") (second)))
 
 (defn get-username [token]
   (-> (http/get (str "https://api.github.com/user?access_token=" token))
       (:body) (json/decode true) :login))
 
 (defroutes app
-  (GET "/" {identity :identity {username :username} :session :as req}
-       (prn req)
+  (GET "/" {{username :username} :session :as req}
        (sql/with-connection db/db
          (html/dashboard (db/get-buildpacks) username (db/get-kit username))))
   (GET "/buildkit/:name.tgz" [name]
@@ -57,9 +52,9 @@
   (route/not-found "Not found"))
 
 (defn -main [& [port]]
-  (let [port (Integer. (or port (System/getenv "PORT")))]
+  (let [port (Integer. (or port (System/getenv "PORT")))
+        store (cookie/cookie-store {:key (System/getenv "SESSION_SECRET")})]
     (jetty/run-jetty (-> #'app
                          (resource/wrap-resource "static")
-                         ;; (friend/authenticate friend-opts)
-                         (handler/site {:session {:store (cookie/cookie-store)}}))
+                         (handler/site {:session {:store store}}))
                      {:port port :join? false})))
