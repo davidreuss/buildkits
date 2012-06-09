@@ -6,22 +6,31 @@
             [cheshire.core :as json]
             [clojure.java.shell :as sh]
             [clojure.java.io :as io])
-  (:import (java.io File BufferedOutputStream FileOutputStream)
+  (:import (java.io BufferedOutputStream BufferedInputStream
+                    File FileOutputStream)
            (org.apache.commons.compress.archivers.tar TarArchiveOutputStream
+                                                      TarArchiveInputStream
                                                       TarArchiveEntry)
-           (org.apache.commons.compress.compressors.gzip GzipCompressorOutputStream)))
+           (org.apache.commons.compress.compressors.gzip
+            GzipCompressorOutputStream GzipCompressorInputStream)))
 
 (def work-dir (or (System/getenv "WORK_DIR") (str (io/file "work"))))
 
-(defn check-out [{:keys [git name] :as buildpack} base-path]
-  (.mkdirs (io/file base-path))
+(defn extract [{:keys [tarball name] :as buildpack} base-path]
   (let [path (str base-path "/buildpacks/" name)
-        [git-url branch] (.split git "#")
-        res (sh/sh "git" "clone" git-url path)]
-    (when branch
-      (sh/sh "git" "checkout" branch :dir path))
-    (when (pos? (:exit res))
-      (throw (Exception. (:err res))))
+        tar (-> tarball
+                (BufferedInputStream.)
+                (GzipCompressorInputStream.)
+                (TarArchiveInputStream.))]
+    (loop [entry (.getNextTarEntry tar)]
+      (when entry
+        (let [file (io/file base-path (.getName entry))]
+          (.mkdirs (.getParentFile file))
+          (when (.isFile entry)
+            (io/copy tar file)
+            (when (pos? (mod (.getMode entry) 0100))
+              (.setExecutable file true))))
+        (recur (.getNextTarEntry tar))))
     path))
 
 (defn tgz-dir [path target]
@@ -45,19 +54,12 @@
         (throw e))))
   (io/file target))
 
-(defn compose [name kit target]
-  (let [path (str work-dir "/" name)]
+(defn compose [name kit]
+  (let [base-path (str work-dir "/" name)]
     (doseq [buildpack kit]
-      (check-out buildpack path))
-    (.mkdirs (io/file path "bin"))
+      (extract buildpack base-path))
+    (.mkdirs (io/file base-path "bin"))
     (doseq [script ["bin/detect" "bin/compile" "bin/release"]]
-      (io/copy (.openStream (io/resource script)) (io/file path script))
-      (.setExecutable (io/file path script) true))
-    (tgz-dir path target)))
-
-(defn composed-kit [name kit]
-  ;; TODO: Still a race condition here
-  (let [file (io/file work-dir (str name ".tgz"))]
-    (if (.exists file)
-      file
-      (compose name kit file))))
+      (io/copy (.openStream (io/resource script)) (io/file base-path script))
+      (.setExecutable (io/file base-path script) true))
+    (tgz-dir base-path (File/createTempFile name ".tgz"))))

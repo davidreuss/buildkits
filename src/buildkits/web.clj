@@ -36,7 +36,7 @@
        (sql/with-connection db/db
          {:status 200
           :headers {"Content-Type" "application/octet-stream"}
-          :body (kit/composed-kit name (db/get-kit name))}))
+          :body (kit/compose name (db/get-kit name))}))
   (GET "/oauth" [code]
        (assoc (res/redirect "/")
          :session {:username (get-username (get-token code))}))
