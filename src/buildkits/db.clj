@@ -53,7 +53,11 @@
   (sql/insert-record :buildpacks {:name buildpack-name
                                   :tarball (get-bytes (:tempfile content))
                                   ;; TODO: design buildpack manifest
-                                  :attributes (hstore {})}))
+                                  :attributes (hstore {:owner username})}))
+
+(defn update [buildpack-name content]
+  (sql/update-values :buildpacks ["name = ?" buildpack-name]
+                     {:tarball (get-bytes (:tempfile content))}))
 
 (defn migrate []
   (sql/with-connection db

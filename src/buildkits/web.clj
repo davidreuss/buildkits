@@ -12,7 +12,8 @@
             [clojure.data.codec.base64 :as base64]
             [buildkits.db :as db]
             [buildkits.html :as html]
-            [buildkits.kit :as kit]))
+            [buildkits.kit :as kit]
+            [buildkits.buildpack :as buildpack]))
 
 (defn get-token [code]
   (->> (http/post "https://github.com/login/oauth/access_token"
@@ -24,11 +25,6 @@
 (defn get-username [token]
   (-> (http/get (str "https://api.github.com/user?access_token=" token))
       (:body) (json/decode true) :login))
-
-;; for actions coming from the heroku-buildpacks plugin
-(defn check-api-key [username key]
-  (try (= username (.getEmail (.getUserInfo (com.heroku.api.HerokuAPI. key))))
-       (catch com.heroku.api.exception.RequestFailedException _)))
 
 (defroutes app
   (GET "/" {{username :username} :session :as req}
@@ -62,11 +58,7 @@
         (let [auth (get (:headers req) "authorization")
               basic (base64/decode (.getBytes (second (.split auth " "))))
               [username key] (.split (String. basic) ":")]
-          (if (check-api-key username key)
-            (sql/with-connection db/db
-              (db/create username name buildpack)
-              {:status 201})
-            {:status 401})))
+          (buildpack/publish username key name buildpack)))
   (route/not-found "Not found"))
 
 (defn -main [& [port]]
