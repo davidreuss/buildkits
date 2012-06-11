@@ -21,8 +21,9 @@
        (if username
          [:p "Logged in as " username ". "
           [:a {:href "/logout"} "Log out"] "."]
-         [:p [:a {:href (str "https://github.com/login/oauth/authorize?"
-                             "client_id=4e138466e2422c3e0524")}
+         [:p [:a {:href (str "https://api.heroku.com/oauth/authorize?"
+                             "response_type=code&client_id="
+                             (System/getenv "OAUTH_CLIENT_ID"))}
               "Log in"]])]]
      [:div.row
       [:div.span8.offset2 body]]]]))

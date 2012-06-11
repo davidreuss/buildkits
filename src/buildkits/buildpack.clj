@@ -12,7 +12,8 @@
     (sql/with-connection db/db
       (if-let [pack (db/get-buildpack buildpack-name)]
         (if (= (:owner pack) username)
-          (db/update name buildpack))
+          (db/update name buildpack)
+          {:status 403})
         (db/create username name buildpack))
       {:status 201})
     {:status 401}))

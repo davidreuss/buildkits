@@ -16,20 +16,19 @@
             [buildkits.buildpack :as buildpack]))
 
 (defn get-token [code]
-  (->> (http/post "https://github.com/login/oauth/access_token"
-                  {:form-params {:client_id "4e138466e2422c3e0524"
-                                 :client_secret (System/getenv "OAUTH_CLIENT_SECRET")
-                                 :code code}})
-       (:body) (re-find #"access_token=([^&]+)") (second)))
+  (-> (http/post "https://api.heroku.com/oauth/token"
+                 {:form-params {:client_id (System/getenv "OAUTH_CLIENT_ID")
+                                :client_secret (System/getenv "OAUTH_CLIENT_SECRET")
+                                :code code :grant_type "authorization_code"}})
+      (:body) (json/decode true) :access_token))
 
 (defn get-username [token]
-  (-> (http/get (str "https://api.github.com/user?access_token=" token))
-      (:body) (json/decode true) :login))
+  (-> (http/get (str "https://api.heroku.com/user?bearer_token=" token))
+      (:body) (json/decode true) :email))
 
 (defroutes app
   (GET "/" {{username :username} :session :as req}
-       {:session {:hello "world"}
-        :body (sql/with-connection db/db
+       {:body (sql/with-connection db/db
                 (html/dashboard (db/get-buildpacks) username
                                 (db/get-kit username)))})
   (GET "/buildkit/:name.tgz" [name]
