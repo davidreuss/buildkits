@@ -32,9 +32,9 @@
   [:div.toggle
    (if (some #(= (:name buildpack) (:name %)) kit)
      ;; TODO: support sorting
-     (form-to [:delete (format "/kit/%s" (:name buildpack))]
+     (form-to [:delete (format "/buildkit/%s" (:name buildpack))]
               (submit-button "remove"))
-     (form-to [:put (format "/kit/%s/%s" (:name buildpack) 0)]
+     (form-to [:put (format "/buildkit/%s/%s" (:name buildpack) 0)]
               (submit-button "add")))])
 
 (defn render [kit buildpack]

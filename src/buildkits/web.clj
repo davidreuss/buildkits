@@ -41,11 +41,11 @@
          :session {:username (get-username (get-token code))}))
   (GET "/logout" []
        (assoc (res/redirect "/") :session nil))
-  (PUT "/kit/:buildpack/:pos" [buildpack pos :as {{:keys [username]} :session}]
+  (PUT "/buildkit/:buildpack/:pos" [buildpack pos :as {{:keys [username]} :session}]
        (sql/with-connection db/db
          (db/add-to-kit username buildpack (Integer. pos)))
        (res/redirect "/"))
-  (DELETE "/kit/:buildpack" [buildpack :as {{:keys [username]} :session}]
+  (DELETE "/buildkit/:buildpack" [buildpack :as {{:keys [username]} :session}]
           (sql/with-connection db/db
             (db/remove-from-kit username buildpack))
           (res/redirect "/"))
