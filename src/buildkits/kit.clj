@@ -21,7 +21,7 @@
                 (TarArchiveInputStream.))]
     (loop [entry (.getNextTarEntry tar)]
       (when entry
-        (let [file (io/file base-path (.getName entry))]
+        (let [file (io/file path (.getName entry))]
           (.mkdirs (.getParentFile file))
           (when (.isFile entry)
             (io/copy tar file)
