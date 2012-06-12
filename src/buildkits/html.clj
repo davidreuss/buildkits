@@ -41,9 +41,7 @@
   [:div#buildpack
    (if kit (toggle kit buildpack))
    [:h4 [:a {:href (:url buildpack)} (:name buildpack)]]
-   [:p#desc (:description buildpack)]
-   [:p#author (str "By " (:author buildpack))]
-   [:p#license (str "Licensed under: " (:license buildpack))]])
+   [:p#owner (str "By " (:owner buildpack))]])
 
 (defn dashboard [buildpacks username kit]
   (layout [:div
