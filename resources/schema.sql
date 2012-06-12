@@ -10,7 +10,7 @@ CREATE TABLE buildpacks (
    );
 
 CREATE TABLE kits (
-     kit varchar PRIMARY KEY,
+     kit varchar NOT NULL,
      buildpack_name varchar NOT NULL,
      position integer NOT NULL
    );
