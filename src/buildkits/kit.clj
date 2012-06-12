@@ -1,13 +1,9 @@
 (ns buildkits.kit
   (:refer-clojure :exclude [delete remove])
-  (:require [hiccup.page :refer [html5 include-css include-js]]
-            [compojure.core :refer [defroutes GET PUT POST DELETE]]
-            [buildkits.db :as db]
-            [cheshire.core :as json]
-            [clojure.java.shell :as sh]
+  (:require [clojure.java.shell :as sh]
             [clojure.java.io :as io])
   (:import (java.io BufferedOutputStream BufferedInputStream
-                    File FileOutputStream)
+                    ByteArrayInputStream File FileOutputStream)
            (org.apache.commons.compress.archivers.tar TarArchiveOutputStream
                                                       TarArchiveInputStream
                                                       TarArchiveEntry)
@@ -19,6 +15,7 @@
 (defn extract [{:keys [tarball name] :as buildpack} base-path]
   (let [path (str base-path "/buildpacks/" name)
         tar (-> tarball
+                (ByteArrayInputStream.)
                 (BufferedInputStream.)
                 (GzipCompressorInputStream.)
                 (TarArchiveInputStream.))]
