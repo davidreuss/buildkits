@@ -37,8 +37,10 @@
             "buildpacks.name = kits.buildpack_name ORDER BY kits.position") name]
       (mapv (comp flatten unhstore) buildpacks))))
 
-(defn add-to-kit [name buildpack position]
-  (sql/insert-record :kits {:kit name :buildpack_name buildpack}))
+(defn add-to-kit [username buildpack position]
+  (sql/insert-record :kits {:kit username
+                            :buildpack_name buildpack
+                            :position position}))
 
 (defn remove-from-kit [name buildpack]
   (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))

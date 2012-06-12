@@ -43,7 +43,7 @@
        (assoc (res/redirect "/") :session nil))
   (PUT "/kit/:buildpack/:pos" [buildpack pos :as {{:keys [username]} :session}]
        (sql/with-connection db/db
-         (db/add-to-kit username buildpack pos))
+         (db/add-to-kit username buildpack (Integer. pos)))
        (res/redirect "/"))
   (DELETE "/kit/:buildpack" [buildpack :as {{:keys [username]} :session}]
           (sql/with-connection db/db
