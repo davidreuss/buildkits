@@ -22,7 +22,8 @@
 (defn get-buildpack [buildpack-name]
   (sql/with-query-results [b] ["select * from buildpacks where name = ?"
                                buildpack-name]
-    (flatten (unhstore b))))
+    (if b
+      (flatten (unhstore b)))))
 
 (defn get-buildpacks []
   (sql/with-query-results buildpacks ["select name, attributes from buildpacks"]
