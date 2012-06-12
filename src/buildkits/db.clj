@@ -17,7 +17,7 @@
 
 (defn flatten [buildpack]
   (merge (dissoc buildpack :attributes)
-         (:attributers buildpack)))
+         (:attributes buildpack)))
 
 (defn get-buildpack [buildpack-name]
   (sql/with-query-results [b] ["select * from buildpacks where name = ?"
