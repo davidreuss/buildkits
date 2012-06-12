@@ -46,7 +46,7 @@
        (sql/with-connection db/db
          (db/add-to-kit username buildpack (Integer. pos)))
        (res/redirect "/"))
-  (DELETE "/buildkit/:buildpack" [buildpack :as {{:keys [username]} :session}]
+  (DELETE "/buildkit/:buildpack/:pos" [buildpack :as {{:keys [username]} :session}]
           (sql/with-connection db/db
             (db/remove-from-kit username buildpack))
           (res/redirect "/"))

@@ -52,9 +52,13 @@
 			<hr />
 		</div>
 		<div class="two-thirds column">
-		  <ul id="buildpacks">
+		  <ul id="buildpacks" style="margin-left: 7em;">
             <li><h4>clojure</h4>
-              <p>By phil.hagelberg@heroku.com</p></li>
+              <form class="toggle" action="/buildkit/clojure-lein2/0" method="POST"
+                    style="float: left; margin: -2.5em -5.5em">
+                <input name="_method" type="hidden" value="PUT">
+                <input type="submit" value="add"></form>
+              <p class="owner">By phil.hagelberg@heroku.com</p></li>
           </ul>
 		</div>
 		<div class="one-third column explaination">
@@ -63,7 +67,11 @@
 			<ul class="square">
 				<li>Each buildpack with a matching <code>bin/detect</code>
 				  script will be activated.</li>
-                <li>For <strong>great justice</strong>.</li>
+                <li>Publish new buildpacks with
+                  the <a href="https://github.com/ddollar/heroku-buildpacks">heroku-buildpacks</a>
+                  plugin.</li>
+                <li id="yours">Your <a id="kit" href="">Build Kit</a> can be
+                  used with <a href="https://github.com/ddollar/anvil">Anvil</a>.</li>
 			</ul>
 		</div>
 	</div><!-- container -->
