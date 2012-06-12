@@ -2,6 +2,7 @@
   (:require [ring.adapter.jetty :as jetty]
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.resource :as resource]
+            [ring.middleware.stacktrace :as trace]
             [ring.util.response :as res]
             [clj-http.client :as http]
             [cheshire.core :as json]
@@ -65,5 +66,6 @@
         store (cookie/cookie-store {:key (System/getenv "SESSION_SECRET")})]
     (jetty/run-jetty (-> #'app
                          (resource/wrap-resource "static")
+                         (trace/wrap-stacktrace)
                          (handler/site {:session {:store store}}))
                      {:port port :join? false})))
