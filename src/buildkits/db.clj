@@ -45,22 +45,15 @@
 (defn remove-from-kit [name buildpack]
   (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))
 
-;; why is this not in clojure.java.io?
-(defn- get-bytes [file]
-  (let [baos (java.io.ByteArrayOutputStream.)]
-    (io/copy file baos)
-    (.delete file)
-    (.toByteArray baos)))
-
 (defn create [username buildpack-name content]
   (sql/insert-record :buildpacks {:name buildpack-name
-                                  :tarball (get-bytes (:tempfile content))
+                                  :tarball content
                                   ;; TODO: design buildpack manifest
                                   :attributes (hstore {:owner username})}))
 
 (defn update [buildpack-name content]
   (sql/update-values :buildpacks ["name = ?" buildpack-name]
-                     {:tarball (get-bytes (:tempfile content))}))
+                     {:tarball content}))
 
 (defn migrate []
   (sql/with-connection db

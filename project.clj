@@ -14,6 +14,7 @@
                  [org.clojars.technomancy/osmosis-hstore "0.2"]
                  [org.clojure/java.jdbc "0.2.1"]
                  [org.clojure/data.codec "0.1.0"]
+                 [net.java.dev.jets3t/jets3t "0.9.0"]
                  [com.heroku.api/heroku-api "0.9"]
                  [com.heroku.api/heroku-json-jackson "0.9"]
                  [com.heroku.api/heroku-http-apache "0.9"]
