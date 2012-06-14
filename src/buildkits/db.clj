@@ -35,12 +35,21 @@
       [(str "select buildpacks.* from buildpacks, kits"
             " where kits.kit = ? AND "
             "buildpacks.name = kits.buildpack_name ORDER BY kits.position") name]
-      (mapv (comp flatten unhstore) buildpacks))))
+      (if (seq buildpacks)
+        (mapv (comp flatten unhstore) buildpacks)))))
 
 (defn add-to-kit [username buildpack position]
   (sql/insert-record :kits {:kit username
                             :buildpack_name buildpack
                             :position position}))
+
+(def defaults ["clojure" "gradle" "grails" "java" "logo" "nodejs" "php"
+               "play" "python" "ruby" "ruby_bamboo" "scala"])
+
+(defn create-kit [name]
+  (doseq [buildpack defaults]
+    (add-to-kit name buildpack 0))
+  (get-kit name))
 
 (defn remove-from-kit [name buildpack]
   (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))

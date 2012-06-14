@@ -31,7 +31,9 @@
   (GET "/" {{username :username} :session :as req}
        {:body (sql/with-connection db/db
                 (html/dashboard (db/get-buildpacks) username
-                                (db/get-kit username)))})
+                                (if username
+                                  (or (db/get-kit username)
+                                      (db/create-kit username)))))})
   (GET "/buildkit/:name.tgz" [name]
        (sql/with-connection db/db
          {:status 200
