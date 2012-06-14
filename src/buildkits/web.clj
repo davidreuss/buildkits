@@ -36,9 +36,12 @@
                                       (db/create-kit username)))))})
   (GET "/buildkit/:name.tgz" [name]
        (sql/with-connection db/db
-         {:status 200
-          :headers {"Content-Type" "application/octet-stream"}
-          :body (kit/compose name (db/get-kit name))}))
+         (let [kit (db/get-kit name)]
+           (if kit
+             {:status 200
+              :headers {"Content-Type" "application/octet-stream"}
+              :body (kit/compose name kit)}
+             {:status 404}))))
   (GET "/oauth" [code]
        (assoc (res/redirect "/")
          :session {:username (get-username (get-token code))}))
