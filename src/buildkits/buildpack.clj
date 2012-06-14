@@ -27,21 +27,22 @@
 (defn get-bytes [file]
   (let [baos (java.io.ByteArrayOutputStream.)]
     (io/copy file baos)
-    ;; (.delete file)
+    (.delete file)
     (.toByteArray baos)))
 
 (defn publish [username key buildpack-name buildpack]
   (if (check-api-key username key)
     (sql/with-connection db/db
+      (prn (keys buildpack))
       (if-let [pack (db/get-buildpack buildpack-name)]
         (if (= (:owner pack) username)
-          (let [content (get-bytes (:temp-file buildpack))]
+          (let [content (get-bytes (:tempfile buildpack))]
             (db/update buildpack-name content)
             (s3-put buildpack-name content)
             {:status 200})
           {:status 403})
-        (let [content (get-bytes (:temp-file buildpack))]
-            (db/create username buildpack-name buildpack)
+        (let [content (get-bytes (:tempfile buildpack))]
+            (db/create username buildpack-name content)
             (s3-put buildpack-name content)
             {:status 201})))
     {:status 401}))
