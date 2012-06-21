@@ -35,6 +35,7 @@
                       (BufferedOutputStream.)
                       (GzipCompressorOutputStream.)
                       (TarArchiveOutputStream.))]
+    (.setLongFileMode out TarArchiveOutputStream/LONGFILE_GNU)
     (try ; with-open swallows exceptions here
       (doseq [f (file-seq (io/file path))]
         (when-not (.isDirectory f)
