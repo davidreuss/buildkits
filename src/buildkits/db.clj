@@ -32,9 +32,11 @@
 (defn get-kit [name]
   (if name
     (sql/with-query-results buildpacks
-      [(str "select buildpacks.* from buildpacks, kits"
-            " where kits.kit = ? AND "
-            "buildpacks.name = kits.buildpack_name ORDER BY kits.position") name]
+      [(str "SELECT buildpacks.*, revisions.tarball "
+            "FROM buildpacks, kits, revisions "
+            "WHERE kits.kit = ? AND revisions.buildpack_name = buildpacks.name "
+            "AND buildpacks.name = kits.buildpack_name ORDER BY kits.position")
+       name]
       (if (seq buildpacks)
         (mapv (comp flatten unhstore) buildpacks)))))
 
@@ -54,16 +56,13 @@
 (defn remove-from-kit [name buildpack]
   (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))
 
-(defn create [username buildpack-name content]
-  (sql/insert-record :buildpacks {:name buildpack-name
-                                  :tarball content
-                                  ;; TODO: design buildpack manifest
-                                  :attributes (hstore {:owner username})}))
-
 (defn update [buildpack-name content]
-  (sql/update-values :buildpacks ["name = ?" buildpack-name]
-                     {:tarball content}))
+  (sql/insert-record :revisions {:buildpack_name buildpack-name
+                                 :tarball content}))
 
-(defn migrate []
-  (sql/with-connection db
-    (apply sql/do-commands (.split (slurp (io/resource "schema.sql")) ";"))))
+(defn create [username buildpack-name content]
+  (sql/transaction
+   (sql/insert-record :buildpacks {:name buildpack-name
+                                   ;; TODO: design buildpack manifest
+                                   :attributes (hstore {:owner username})})
+   (update buildpack-name content)))

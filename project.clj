@@ -18,4 +18,6 @@
                  [com.heroku.api/heroku-api "0.9"]
                  [com.heroku.api/heroku-json-jackson "0.9"]
                  [com.heroku.api/heroku-http-apache "0.9"]
-                 [org.apache.commons/commons-compress "1.4.1"]])
+                 [org.apache.commons/commons-compress "1.4.1"]]
+  ;; jetty really doesn't like the bootclasspath
+  :profiles {:dev {:bootclasspath false}})
