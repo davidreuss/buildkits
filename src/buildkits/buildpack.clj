@@ -33,7 +33,6 @@
 (defn publish [username key buildpack-name buildpack]
   (if (check-api-key username key)
     (sql/with-connection db/db
-      (prn (keys buildpack))
       (if-let [pack (db/get-buildpack buildpack-name)]
         (if (= (:owner pack) username)
           (let [content (get-bytes (:tempfile buildpack))]
@@ -45,4 +44,28 @@
             (db/create username buildpack-name content)
             (s3-put buildpack-name content)
             {:status 201})))
+    {:status 401}))
+
+(defn rollback [name]
+  (sql/with-query-results [latest second] [(str "SELECT * FROM revisions "
+                                                "WHERE buildpack_name = ? "
+                                                "ORDER BY created_at DESC "
+                                                "LIMIT 2")
+                                           name]
+    (if latest
+      (do (sql/delete-rows :revisions ["buildpack_name = ? AND created_at = ?"
+                                       name (:created_at latest)])
+          (when second
+            (s3-put name (:tarball second)))
+          {:status 200})
+      {:status 404})))
+
+(defn attempt-rollback [username key buildpack-name]
+  (if (check-api-key username key)
+    (sql/with-connection db/db
+      (if-let [pack (db/get-buildpack buildpack-name)]
+        (if (= (:owner pack) username)
+          (rollback (:name pack))
+          {:status 403})
+        {:status 404}))
     {:status 401}))

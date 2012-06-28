@@ -27,6 +27,11 @@
   (-> (http/get (str "https://api.heroku.com/user?bearer_token=" token))
       (:body) (json/decode true) :email))
 
+(defn basic-auth [headers]
+  (let [auth (get headers "authorization")
+        basic (base64/decode (.getBytes (second (.split auth " "))))]
+    (.split (String. basic) ":")))
+
 (defroutes app
   (GET "/" {{username :username} :session :as req}
        {:body (sql/with-connection db/db
@@ -60,10 +65,11 @@
         :body (sql/with-connection db/db
                 (json/encode (db/get-buildpacks)))})
   (POST "/buildpacks/:name" {{:keys [name buildpack]} :params :as req}
-        (let [auth (get (:headers req) "authorization")
-              basic (base64/decode (.getBytes (second (.split auth " "))))
-              [username key] (.split (String. basic) ":")]
+        (let [[username key] (basic-auth (:headers req))]
           (buildpack/publish username key name buildpack)))
+  (DELETE "/buildpacks/:name" {{:keys [name]} :params :as req}
+          (let [[username key] (basic-auth (:headers req))]
+            (buildpack/attempt-rollback username key name)))
   (route/not-found "Not found"))
 
 (defn -main [& [port]]
