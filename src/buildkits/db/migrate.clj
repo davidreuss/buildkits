@@ -4,11 +4,20 @@
             [buildkits.db :as db])
   (:import (java.sql Timestamp)))
 
-(defn run-sql [file]
-  (apply sql/do-commands (.split (slurp (io/resource file)) ";")))
+(defn hstore-extension []
+  (try (sql/do-commands "CREATE EXTENSION hstore")
+       ;; Another DB could have already created this extension.
+       (catch Exception _)))
 
 (defn initial-schema []
-  (run-sql "initial-schema.sql"))
+  (sql/create-table "buildpacks"
+                    [:name :varchar "PRIMARY KEY"]
+                    [:tarball :bytea "NOT NULL"]
+                    [:attributes :hstore])
+  (sql/create-table "kits"
+                    [:kit :varchar "NOT NULL"]
+                    [:buildpack_name :varchar "NOT NULL"]
+                    [:position :integer "NOT NULL"]))
 
 (defn add-revisions-table []
   (sql/create-table "revisions"
@@ -28,6 +37,9 @@
                               :tarball tarball
                               :created_at (Timestamp.
                                            (System/currentTimeMillis))}))))))
+
+(defn drop-tarball-column []
+  (sql/do-commands "ALTER TABLE buildpacks DROP COLUMN tarball"))
 
 ;; migrations mechanics
 
@@ -52,11 +64,9 @@
                :when (not (has-run? (str (:name (meta m)))))]
          (run-and-record m))))))
 
-(defn drop-tarball-column []
-  (sql/do-commands "ALTER TABLE buildpacks DROP COLUMN tarball"))
-
 (defn -main []
-  (migrate #'initial-schema
+  (migrate #'hstore-extension
+           #'initial-schema
            #'add-revisions-table
            #'populate-revisions
            #'drop-tarball-column))
