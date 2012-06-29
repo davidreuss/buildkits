@@ -29,23 +29,19 @@
   (sql/with-query-results buildpacks ["select * from buildpacks"]
     (mapv (comp flatten unhstore) buildpacks)))
 
-;; TODO: move this to an SQL subselect
-(defn- de-dupe [buildpacks buildpack]
-  (if (some #(= (:name buildpack) (:name %)) buildpacks)
-    buildpacks
-    (conj buildpacks buildpack)))
-
 (defn get-kit [name]
   (if name
     (sql/with-query-results buildpacks
-      [(str "SELECT buildpacks.*, revisions.tarball "
-            "FROM buildpacks, kits, revisions "
-            "WHERE kits.kit = ? AND revisions.buildpack_name = buildpacks.name "
-            "AND buildpacks.name = kits.buildpack_name "
-            "ORDER BY revisions.created_at DESC")
-       name]
+      [(str "SELECT buildpacks.*, revisions.tarball"
+            " FROM buildpacks, revisions, kits"
+            " WHERE revisions.buildpack_name = buildpacks.name"
+            " AND kits.kit = ?"
+            " AND buildpacks.name = kits.buildpack_name"
+            " AND revisions.created_at IN "
+            " (SELECT MAX(revisions.created_at) FROM revisions"
+            "   GROUP BY buildpack_name);") name]
       (if (seq buildpacks)
-        (mapv (comp flatten unhstore) (reduce de-dupe [] buildpacks))))))
+        (mapv (comp flatten unhstore) buildpacks)))))
 
 (defn add-to-kit [username buildpack position]
   (sql/insert-record :kits {:kit username
