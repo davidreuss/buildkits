@@ -15,13 +15,14 @@
        (catch com.heroku.api.exception.RequestFailedException _)))
 
 (defn s3-put [buildpack-name content]
-  (let [s3 (RestS3Service. (AWSCredentials. (System/getenv "AWS_ACCESS_KEY")
-                                            (System/getenv "AWS_SECRET_KEY")))
-        bucket (or (System/getenv "AWS_BUCKET") "buildkits-dev")
-        key (format "buildpacks/%s.tgz" buildpack-name)
-        obj (doto (S3Object. key content)
-              (.setAcl (AccessControlList/REST_CANNED_PUBLIC_READ)))]
-    (.putObject s3 bucket obj)))
+  (when-let [access_key (System/getenv "AWS_ACCESS_KEY")]
+    (let [s3 (RestS3Service. (AWSCredentials. access_key
+                                              (System/getenv "AWS_SECRET_KEY")))
+          bucket (or (System/getenv "AWS_BUCKET") "buildkits-dev")
+          key (format "buildpacks/%s.tgz" buildpack-name)
+          obj (doto (S3Object. key content)
+                (.setAcl (AccessControlList/REST_CANNED_PUBLIC_READ)))]
+      (.putObject s3 bucket obj))))
 
 ;; why is this not in clojure.java.io?
 (defn get-bytes [file]
