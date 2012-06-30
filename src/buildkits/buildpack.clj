@@ -1,7 +1,8 @@
 (ns buildkits.buildpack
   (:require [buildkits.db :as db]
             [clojure.java.io :as io]
-            [clojure.java.jdbc :as sql])
+            [clojure.java.jdbc :as sql]
+            [cheshire.core :as json])
   (:import (org.jets3t.service.security AWSCredentials)
            (org.jets3t.service.acl AccessControlList)
            (org.jets3t.service.impl.rest.httpclient RestS3Service)
@@ -36,15 +37,15 @@
     (sql/with-connection db/db
       (if-let [pack (db/get-buildpack buildpack-name)]
         (if (= (:owner pack) username)
-          (let [content (get-bytes (:tempfile buildpack))]
-            (db/update buildpack-name content)
+          (let [content (get-bytes (:tempfile buildpack))
+                rev-id (db/update buildpack-name content)]
             (s3-put buildpack-name content)
-            {:status 200})
+            {:status 200 :body (json/encode {:revision rev-id})})
           {:status 403})
         (let [content (get-bytes (:tempfile buildpack))]
             (db/create username buildpack-name content)
             (s3-put buildpack-name content)
-            {:status 201})))
+            {:status 201 :body (json/encode {:revision 0})})))
     {:status 401}))
 
 (defn rollback [name]
@@ -58,7 +59,7 @@
                                        name (:created_at latest)])
           (when second
             (s3-put name (:tarball second)))
-          {:status 200})
+          {:status 200 :body (json/encode {:revision (:id second)})})
       {:status 404})))
 
 (defn attempt-rollback [username key buildpack-name]
@@ -70,3 +71,5 @@
           {:status 403})
         {:status 404}))
     {:status 401}))
+
+(defn revisions [username key buildpack-name])

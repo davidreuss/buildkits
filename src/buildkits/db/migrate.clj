@@ -41,6 +41,10 @@
 (defn drop-tarball-column []
   (sql/do-commands "ALTER TABLE buildpacks DROP COLUMN tarball"))
 
+(defn add-revision-id []
+  (sql/do-commands (str "ALTER TABLE revisions ADD COLUMN id INTEGER"
+                        " NOT NULL DEFAULT 0")))
+
 ;; migrations mechanics
 
 (defn run-and-record [migration]
@@ -69,4 +73,5 @@
            #'initial-schema
            #'add-revisions-table
            #'populate-revisions
-           #'drop-tarball-column))
+           #'drop-tarball-column
+           #'add-revision-id))

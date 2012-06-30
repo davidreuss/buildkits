@@ -60,8 +60,13 @@
   (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))
 
 (defn update [buildpack-name content]
-  (sql/insert-record :revisions {:buildpack_name buildpack-name
-                                 :tarball content}))
+  (sql/transaction
+   (sql/with-query-results [{:keys [max]}]
+     ["SELECT max(id) FROM revisions  WHERE buildpack_name = ?" buildpack-name]
+     (let [rev-id (inc (or max 0))]
+       (sql/insert-record :revisions {:buildpack_name buildpack-name
+                                      :id rev-id :tarball content})
+       rev-id))))
 
 (defn create [username buildpack-name content]
   (sql/transaction
