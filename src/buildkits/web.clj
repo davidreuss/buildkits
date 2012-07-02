@@ -10,7 +10,6 @@
             [compojure.route :as route]
             [compojure.handler :as handler]
             [clojure.java.jdbc :as sql]
-            [clojure.data.codec.base64 :as base64]
             [buildkits.db :as db]
             [buildkits.html :as html]
             [buildkits.kit :as kit]
@@ -26,11 +25,6 @@
 (defn get-username [token]
   (-> (http/get (str "https://api.heroku.com/user?bearer_token=" token))
       (:body) (json/decode true) :email))
-
-(defn basic-auth [headers]
-  (let [auth (get headers "authorization")
-        basic (base64/decode (.getBytes (second (.split auth " "))))]
-    (.split (String. basic) ":")))
 
 (defroutes app
   (GET "/" {{username :username} :session :as req}
@@ -60,16 +54,8 @@
           (sql/with-connection db/db
             (db/remove-from-kit username buildpack))
           (res/redirect "/"))
-  (GET "/buildpacks" []
-       {:status 200 :headers {"content-type" "application/json"}
-        :body (sql/with-connection db/db
-                (json/encode (db/get-buildpacks)))})
-  (POST "/buildpacks/:name" {{:keys [name buildpack]} :params :as req}
-        (let [[username key] (basic-auth (:headers req))]
-          (buildpack/publish username key name buildpack)))
-  (DELETE "/buildpacks/:name" {{:keys [name]} :params :as req}
-          (let [[username key] (basic-auth (:headers req))]
-            (buildpack/attempt-rollback username key name)))
+  (ANY "/*" {:as req}
+       (buildpack/app req))
   (route/not-found "Not found"))
 
 (defn -main [& [port]]
