@@ -28,36 +28,36 @@
       (.putObject s3 bucket obj))))
 
 ;; why is this not in clojure.java.io?
-(defn get-bytes [file]
+(defn get-bytes [input]
   (let [baos (java.io.ByteArrayOutputStream.)]
-    (io/copy file baos)
-    (.delete file)
+    (io/copy input baos)
+    (when (instance? java.io.File input)
+      (.delete input))
     (.toByteArray baos)))
 
-(defn create [content username buildpack-name]
+(defn create [username buildpack-name content]
   (let [bytes (get-bytes content)]
     (db/create username buildpack-name bytes)
     (s3-put buildpack-name bytes)
     {:status 201 :body (json/encode {:revision 0})}))
 
-(defn update [content username buildpack]
+(defn update [username buildpack _ content]
   (let [bytes (get-bytes content)
         rev-id (db/update (:name buildpack) bytes)]
     (s3-put (:name buildpack) bytes)
     {:status 200 :body (json/encode {:revision rev-id})}))
 
-(defn rollback [username buildpack]
-  (sql/with-query-results [latest second] [(str "SELECT * FROM revisions "
-                                                "WHERE buildpack_name = ? "
-                                                "ORDER BY created_at DESC "
-                                                "LIMIT ?")
-                                           (:name buildpack) 2]
-    (if latest
-      (do (sql/delete-rows :revisions ["buildpack_name = ? AND created_at = ?"
-                                       (:name buildpack) (:created_at latest)])
-          (when second
-            (s3-put (:name buildpack) (:tarball second)))
-          {:status 200 :body (json/encode {:revision (:id second)})})
+(defn- rollback-query [buildpack-name target]
+  (if (= target "previous")
+    [(str "SELECT * FROM revisions WHERE buildpack_name = ?"
+          " ORDER BY id DESC OFFSET 1 LIMIT 1") buildpack-name]
+    ["SELECT * FROM revisions WHERE buildpack_name = ? AND id = ?"
+     buildpack-name (Integer. target)]))
+
+(defn rollback [username buildpack target]
+  (sql/with-query-results [rev] (rollback-query (:name buildpack) target)
+    (if [rev]
+      (update username buildpack nil (:tarball rev))
       {:status 404})))
 
 (defn revisions [username buildpack]
@@ -66,17 +66,18 @@
                                 (:name buildpack)]
     {:status 200 :body (json/encode revs)}))
 
-(defn check-auth [headers buildpack-name found & [not-found]]
+(def ^:dynamic *not-found* (constantly {:status 404}))
+
+(defn check-auth [headers buildpack-name found & args]
   (let [[username key] (-> (get headers "authorization") (.split " ") second
                            .getBytes base64/decode String. (.split ":"))]
     (if (check-api-key username key)
       (sql/with-connection db/db
         (if-let [pack (db/get-buildpack buildpack-name)]
           (if (= (:owner pack) username)
-            (found username pack)
-            (if not-found
-              (not-found )))
-          {:status 404}))
+            (apply found username pack args)
+            {:status 403})
+          (apply *not-found* username args)))
       {:status 401})))
 
 (defroutes app
@@ -84,11 +85,11 @@
        {:status 200 :headers {"content-type" "application/json"}
         :body (sql/with-connection db/db
                 (json/encode (db/get-buildpacks)))})
-  (POST "/buildpacks/:name" {{:keys [name buildpack]} :params headers :headers}
-        (check-auth headers name
-                    (partial update (:tempfile buildpack))
-                    (partial create (:tempfile buildpack))))
-  (DELETE "/buildpacks/:name" {{:keys [name]} :params headers :headers}
-          (check-auth headers name rollback))
   (GET "/buildpacks/:name/revisions" {{:keys [name]} :params headers :headers}
-       (check-auth headers name revisions)))
+       (check-auth headers name revisions))
+  (POST "/buildpacks/:name" {{:keys [name buildpack]} :params headers :headers}
+        (binding [*not-found* create]
+          (check-auth headers name update name (:tempfile buildpack))))
+  (POST "/buildpacks/:name/revisions/:target" {{:keys [name target]} :params
+                                                 headers :headers}
+        (check-auth headers name rollback target)))

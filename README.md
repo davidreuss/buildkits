@@ -54,6 +54,10 @@ version of PostgreSQL to have HStore support.
 
     $ lein run -m buildkits.web
 
+For developing against a local app:
+
+    $ export BUILDPACK_SERVER_URL=http://localhost:5000
+
 ## License
 
 Copyright © 2012 Heroku, Inc.
