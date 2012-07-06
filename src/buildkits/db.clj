@@ -49,7 +49,7 @@
                             :position position}))
 
 (def defaults ["clojure" "gradle" "grails" "java" "logo" "nodejs" "php"
-               "play" "python" "ruby" "ruby_bamboo" "scala"])
+               "play" "python" "ruby" "scala"])
 
 (defn create-kit [name]
   (doseq [buildpack defaults]
