@@ -8,7 +8,7 @@
 (def db (or (System/getenv "DATABASE_URL") "postgres://localhost:5432/buildkits"))
 
 (defn hstore [m]
-  (PGHStore. (zipmap (map name (keys m)) (vals m))))
+  (PGHStore. (walk/stringify-keys m)))
 
 (defn unhstore [h]
   (into {} (for [[k v] h]
