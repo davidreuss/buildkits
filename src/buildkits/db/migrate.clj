@@ -43,7 +43,7 @@
 
 (defn add-revision-id []
   (sql/do-commands (str "ALTER TABLE revisions ADD COLUMN id INTEGER"
-                        " NOT NULL DEFAULT 0")))
+                        " NOT NULL DEFAULT 1")))
 
 ;; migrations mechanics
 

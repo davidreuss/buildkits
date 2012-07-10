@@ -36,10 +36,10 @@
     (.toByteArray baos)))
 
 (defn create [username buildpack-name content]
-  (let [bytes (get-bytes content)]
-    (db/create username buildpack-name bytes)
+  (let [bytes (get-bytes content)
+        rev-id (db/create username buildpack-name bytes)]
     (s3-put buildpack-name bytes)
-    {:status 201 :body (json/encode {:revision 0})}))
+    {:status 201 :body (json/encode {:revision rev-id})}))
 
 (defn update [username buildpack _ content]
   (let [bytes (get-bytes content)
