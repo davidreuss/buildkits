@@ -30,7 +30,8 @@
                                  (h/do->
                                   (h/set-attr "action" (format "/buildkit/%s/0"
                                                                (:name buildpack)))
-                                  (toggle-form buildpack kit)))
+                                  (toggle-form buildpack kit))
+                                 (h/set-attr "action" (login-href)))
                        [:p.owner] (h/content (str "By " (:owner buildpack)))))))
 
 (h/deftemplate dashboard "index.html" [buildpacks username kit]
