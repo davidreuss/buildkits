@@ -20,13 +20,13 @@
          (:attributes buildpack)))
 
 (defn get-buildpack [buildpack-name]
-  (sql/with-query-results [b] ["select * from buildpacks where name = ?"
+  (sql/with-query-results [b] ["SELECT * FROM buildpacks WHERE name = ?"
                                buildpack-name]
     (if b
       (flatten (unhstore b)))))
 
 (defn get-buildpacks []
-  (sql/with-query-results buildpacks ["select * from buildpacks"]
+  (sql/with-query-results buildpacks ["SELECT * FROM buildpacks ORDER BY name"]
     (mapv (comp flatten unhstore) buildpacks)))
 
 (defn get-kit [name]
