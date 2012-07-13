@@ -21,6 +21,7 @@
 	<link rel="stylesheet" href="stylesheets/base.css">
 	<link rel="stylesheet" href="stylesheets/skeleton.css">
 	<link rel="stylesheet" href="stylesheets/layout.css">
+    <link rel="stylesheet" href="stylesheets/buildkits.css">
 
 	<!--[if lt IE 9]>
 		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -45,10 +46,9 @@
 			<hr />
 		</div>
 		<div class="two-thirds column">
-		  <ul id="buildpacks" style="margin-left: 7em;">
+		  <ul id="buildpacks">
             <li><h4>clojure</h4>
-              <form class="toggle" action="/buildkit/clojure-lein2/0" method="POST"
-                    style="float: left; margin: -2.5em -5.5em">
+              <form action="/buildkit/clojure-lein2/0" method="POST">
                 <input name="_method" type="hidden" value="PUT">
                 <input type="submit" value="add"></form>
               <p class="owner">By phil.hagelberg@heroku.com</p></li>

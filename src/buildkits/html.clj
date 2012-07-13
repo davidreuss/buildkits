@@ -28,15 +28,18 @@
                        [:h4] (h/content (:name buildpack))
                        [:form] (if kit
                                  (h/do->
+                                  (h/add-class "logged-in")
                                   (h/set-attr "action" (format "/buildkit/%s/0"
                                                                (:name buildpack)))
-                                  (toggle-form buildpack kit))
-                                 (h/set-attr "action" (login-href)))
+                                  (toggle-form buildpack kit)))
                        [:p.owner] (h/content (str "By " (:owner buildpack)))))))
 
 (h/deftemplate dashboard "index.html" [buildpacks username kit]
   [:p#login :a] (login-link username)
   [:ul#buildpacks :li] (buildpack-list buildpacks kit)
+  [:ul#buildpacks] (if username
+                     (h/add-class "logged-in")
+                     identity)
   [:li#yours] (if username
                 identity
                 (h/html-content (str "<a href=\"" (login-href) "\">Log in<a/> "
