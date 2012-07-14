@@ -1,7 +1,8 @@
 (ns buildkits.kit
   (:refer-clojure :exclude [delete remove])
   (:require [clojure.java.shell :as sh]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [environ.core :as env])
   (:import (java.io BufferedOutputStream BufferedInputStream
                     ByteArrayInputStream File FileOutputStream)
            (org.apache.commons.compress.archivers.tar TarArchiveOutputStream
@@ -10,7 +11,7 @@
            (org.apache.commons.compress.compressors.gzip
             GzipCompressorOutputStream GzipCompressorInputStream)))
 
-(def work-dir (or (System/getenv "WORK_DIR") (str (io/file "work"))))
+(def work-dir (env/env :work-dir (str (io/file "work"))))
 
 (defn extract [{:keys [tarball name] :as buildpack} base-path]
   (let [path (str base-path "/buildpacks/" name)

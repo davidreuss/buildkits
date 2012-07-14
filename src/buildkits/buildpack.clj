@@ -4,6 +4,7 @@
             [clojure.java.jdbc :as sql]
             [cheshire.core :as json]
             [clojure.data.codec.base64 :as base64]
+            [environ.core :as env]
             [compojure.core :refer [defroutes GET PUT POST DELETE ANY]])
   (:import (org.jets3t.service.security AWSCredentials)
            (org.jets3t.service.acl AccessControlList)
@@ -18,10 +19,10 @@
        (catch com.heroku.api.exception.RequestFailedException _)))
 
 (defn s3-put [buildpack-name content]
-  (when-let [access_key (System/getenv "AWS_ACCESS_KEY")]
+  (when-let [access_key (env/env :aws-access-key)]
     (let [s3 (RestS3Service. (AWSCredentials. access_key
-                                              (System/getenv "AWS_SECRET_KEY")))
-          bucket (or (System/getenv "AWS_BUCKET") "buildkits-dev")
+                                              (env/env :aws-secret-key)))
+          bucket (env/env :aws-bucket "buildkits-dev")
           key (format "buildpacks/%s.tgz" buildpack-name)
           obj (doto (S3Object. key content)
                 (.setAcl (AccessControlList/REST_CANNED_PUBLIC_READ)))]

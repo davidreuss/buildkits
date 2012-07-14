@@ -2,10 +2,11 @@
   (:refer-clojure :exclude [flatten])
   (:require [clojure.java.jdbc :as sql]
             [clojure.java.io :as io]
-            [clojure.walk :as walk])
+            [clojure.walk :as walk]
+            [environ.core :as env])
   (:import (org.openstreetmap.osmosis.hstore PGHStore)))
 
-(def db (or (System/getenv "DATABASE_URL") "postgres://localhost:5432/buildkits"))
+(def db (env/env :database-url "postgres://localhost:5432/buildkits"))
 
 (defn hstore [m]
   (PGHStore. (walk/stringify-keys m)))

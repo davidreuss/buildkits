@@ -4,6 +4,7 @@
             [ring.middleware.resource :as resource]
             [ring.middleware.stacktrace :as trace]
             [ring.util.response :as res]
+            [environ.core :as env]
             [clj-http.client :as http]
             [cheshire.core :as json]
             [compojure.core :refer [defroutes GET PUT POST DELETE ANY]]
@@ -17,8 +18,8 @@
 
 (defn get-token [code]
   (-> (http/post "https://api.heroku.com/oauth/token"
-                 {:form-params {:client_id (System/getenv "OAUTH_CLIENT_ID")
-                                :client_secret (System/getenv "OAUTH_CLIENT_SECRET")
+                 {:form-params {:client_id (env/env :oauth-client-id)
+                                :client_secret (env/env :oauth-client-secret)
                                 :code code :grant_type "authorization_code"}})
       (:body) (json/decode true) :access_token))
 
@@ -32,7 +33,10 @@
                 (html/dashboard (db/get-buildpacks) username
                                 (if username
                                   (or (db/get-kit username)
-                                      (db/create-kit username)))))})
+                                      (db/create-kit username)))))
+        ;; :session {:username "phil.hagelberg@heroku.com"}
+        :session nil
+        })
   (GET "/buildkit/:name.tgz" [name]
        (sql/with-connection db/db
          (let [kit (db/get-kit name)]
@@ -59,10 +63,12 @@
   (route/not-found "Not found"))
 
 (defn -main [& [port]]
-  (let [port (Integer. (or port (System/getenv "PORT")))
-        store (cookie/cookie-store {:key (System/getenv "SESSION_SECRET")})]
+  (let [port (Integer. (or port (env/env :port)))
+        store (cookie/cookie-store {:key (env/env :session-secret)})]
     (jetty/run-jetty (-> #'app
                          (resource/wrap-resource "static")
                          (trace/wrap-stacktrace)
                          (handler/site {:session {:store store}}))
                      {:port port :join? false})))
+
+;; (def s (-main 8080))

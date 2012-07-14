@@ -1,10 +1,10 @@
 (ns buildkits.html
-  (:require [net.cgrand.enlive-html :as h]))
+  (:require [net.cgrand.enlive-html :as h]
+            [environ.core :as env]))
 
 (defn login-href []
   (str "https://api.heroku.com/oauth/authorize?"
-       "response_type=code&client_id="
-       (System/getenv "OAUTH_CLIENT_ID")))
+       "response_type=code&client_id=" (env/env :oauth-client-id)))
 
 (defn login-link [username]
   (if username
