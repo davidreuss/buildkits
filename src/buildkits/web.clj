@@ -63,6 +63,6 @@
         store (cookie/cookie-store {:key (System/getenv "SESSION_SECRET")})]
     (jetty/run-jetty (-> #'app
                          (resource/wrap-resource "static")
-                         (trace/wrap-stacktrace)
+                         ;; (trace/wrap-stacktrace)
                          (handler/site {:session {:store store}}))
                      {:port port :join? false})))
