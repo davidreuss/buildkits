@@ -69,16 +69,18 @@
 (def ^:dynamic *not-found* (constantly {:status 404}))
 
 (defn check-auth [headers buildpack-name found & args]
-  (let [[username key] (-> (get headers "authorization") (.split " ") second
-                           .getBytes base64/decode String. (.split ":"))]
-    (if (check-api-key username key)
-      (sql/with-connection db/db
-        (if-let [pack (db/get-buildpack buildpack-name)]
-          (if (= (:owner pack) username)
-            (apply found username pack args)
-            {:status 403})
-          (apply *not-found* username args)))
-      {:status 401})))
+  (if-let [authorization (get headers "authorization")]
+    (let [[username key] (-> authorization (.split " ") second
+                             .getBytes base64/decode String. (.split ":"))]
+      (if (check-api-key username key)
+        (sql/with-connection db/db
+          (if-let [pack (db/get-buildpack buildpack-name)]
+            (if (= (:owner pack) username)
+              (apply found username pack args)
+              {:status 403})
+            (apply *not-found* username args)))
+        {:status 401}))
+    {:status 401}))
 
 (defroutes app
   (GET "/buildpacks" []
