@@ -35,25 +35,31 @@
                                       (db/create-kit username)))))})
   (GET "/buildkit/:name.tgz" [name]
        (sql/with-connection db/db
-         (let [kit (db/get-kit name)]
-           (if kit
-             {:status 200
-              :headers {"Content-Type" "application/octet-stream"}
-              :body (kit/compose name kit)}
-             {:status 404}))))
+         (if-let [kit (db/get-kit name)]
+           {:status 200
+            :headers {"Content-Type" "application/octet-stream"}
+            :body (kit/compose name kit)}
+           {:status 404})))
   (GET "/oauth" [code]
-       (assoc (res/redirect "/")
-         :session {:username (get-username (get-token code))}))
+       (if code
+         (assoc (res/redirect "/")
+           :session {:username (get-username (get-token code))})
+         {:status 403}))
   (GET "/logout" []
        (assoc (res/redirect "/") :session nil))
+  ;; TODO: use compojure contexts to enforce login
   (PUT "/buildkit/:buildpack/:pos" [buildpack pos :as {{:keys [username]} :session}]
-       (sql/with-connection db/db
-         (db/add-to-kit username buildpack (Integer. pos)))
-       (res/redirect "/"))
+       (if username
+         (do (sql/with-connection db/db
+               (db/add-to-kit username buildpack (Integer. pos)))
+             (res/redirect "/"))
+         {:status 403}))
   (DELETE "/buildkit/:buildpack/:pos" [buildpack :as {{:keys [username]} :session}]
-          (sql/with-connection db/db
-            (db/remove-from-kit username buildpack))
-          (res/redirect "/"))
+          (if username
+            (do (sql/with-connection db/db
+                  (db/remove-from-kit username buildpack))
+                (res/redirect "/"))
+            {:stauts 403}))
   (ANY "/*" {:as req}
        (buildpack/app req))
   (route/not-found "Not found"))
