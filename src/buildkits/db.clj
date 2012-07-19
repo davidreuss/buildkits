@@ -19,16 +19,22 @@
   (merge (dissoc buildpack :attributes)
          (:attributes buildpack)))
 
-(defn get-buildpack [buildpack-name]
-  (sql/with-query-results [b] ["SELECT * FROM buildpacks WHERE name = ?"
-                               buildpack-name]
+(defn get-buildpack [org buildpack-name]
+  (sql/with-query-results [b] [(str "SELECT buildpacks.*, organizations.name as org"
+                                    "  FROM buildpacks, organizations"
+                                    " WHERE organizations.name = ?"
+                                    " AND buildpacks.name = ?")
+                               org buildpack-name]
     (if b
       (flatten (unhstore b)))))
 
 (defn get-buildpacks []
-  (sql/with-query-results buildpacks ["SELECT * FROM buildpacks ORDER BY name"]
+  (sql/with-query-results buildpacks
+    [(str "SELECT buildpacks.*, organizations.name as org"
+          " FROM buildpacks, organizations ORDER BY name")]
     (mapv (comp flatten unhstore) buildpacks)))
 
+;; TODO: kits need to be org-savvy
 (defn get-kit [name]
   (if name
     (sql/with-query-results buildpacks
@@ -57,20 +63,23 @@
   (get-kit name))
 
 (defn remove-from-kit [name buildpack]
-  (sql/delete-rows :kits ["kit = ? and buildpack_name = ?" name buildpack]))
+  (sql/delete-rows :kits ["kit = ? AND org = ? AND buildpack_name = ?"
+                          name buildpack]))
 
-(defn update [buildpack-name content]
+(defn update [username buildpack-id content]
   (sql/transaction
    (sql/with-query-results [{:keys [max]}]
-     ["SELECT max(id) FROM revisions  WHERE buildpack_name = ?" buildpack-name]
+     ["SELECT max(id) FROM revisions WHERE buildpack_id = ?" buildpack-id]
      (let [rev-id (inc (or max 0))]
-       (sql/insert-record :revisions {:buildpack_name buildpack-name
-                                      :id rev-id :tarball content})
+       (sql/insert-record :revisions {:buildpack_id buildpack-id :id rev-id
+                                      :published_by username :tarball content})
        rev-id))))
 
-(defn create [username buildpack-name content]
+(defn create [username org buildpack-name content]
   (sql/transaction
-   (sql/insert-record :buildpacks {:name buildpack-name
-                                   ;; TODO: design buildpack manifest
-                                   :attributes (hstore {:owner username})})
-   (update buildpack-name content)))
+   (sql/with-query-results [{:keys [id]}]
+     ["SELECT id FROM organizations WHERE name = ?" org]
+     (let [{:keys [id]} (sql/insert-record :buildpacks
+                                           {:name buildpack-name
+                                            :organization_id id})]
+       (update username id content)))))

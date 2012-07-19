@@ -58,15 +58,52 @@
     (sql/with-query-results _ ["SELECT setval('buildpacks_id_seq', ?)"
                                (count packs)])))
 
-(defn add-buildpacks-org-field []
-  (sql/do-commands "ALTER TABLE buildpacks ADD COLUMN org VARCHAR")
-  (sql/with-query-results packs ["SELECT id, attributes FROM buildpacks"]
-    (doseq [{:keys [id attributes]} packs
-            :let [owner (get attributes "owner")]]
-      (if (re-find #"@heroku\.com" owner)
-        (sql/update-values "buildpacks" ["id = ?" id] {:org "heroku"})
-        (throw (Exception. (str "Orphaned buildpack from " attributes))))))
-  (sql/do-commands "ALTER TABLE buildpacks ALTER COLUMN org SET NOT NULL"))
+(defn add-orgs []
+  (sql/create-table "organizations"
+                    [:id :serial "PRIMARY KEY"]
+                    [:name :varchar "NOT NULL"])
+  (sql/create-table "memberships"
+                    [:id :serial "PRIMARY KEY"]
+                    [:email :varchar "NOT NULL"]
+                    [:organization_id :integer "NOT NULL"])
+  (sql/do-commands "ALTER TABLE buildpacks ADD COLUMN organization_id INTEGER")
+  (let [heroku (sql/insert-values "organizations" [:name] ["heroku"])]
+    (sql/with-query-results packs ["select id, attributes from buildpacks"]
+      (doseq [{:keys [id attributes]} packs
+              :let [owner (get attributes "owner")]]
+        (if (re-find #"@heroku\.com" owner)
+          (do (sql/insert-values "memberships" [:email :organization_id]
+                                 [owner (:id heroku)])
+              (sql/update-values "buildpacks" ["id = ?" id]
+                                 {:organization_id (:id heroku)}))
+          (throw (Exception. (str "Orphaned buildpack from " attributes)))))))
+  (sql/do-commands (str "ALTER TABLE buildpacks ALTER COLUMN organization_id"
+                        " SET NOT NULL")))
+
+(defn add-revisions-published-by []
+  (sql/do-commands "ALTER TABLE revisions ADD COLUMN published_by varchar")
+  (sql/with-query-results
+    revs [(str "SELECT revisions.id, revisions.buildpack_name,"
+               " buildpacks.attributes FROM revisions, buildpacks"
+               " WHERE revisions.buildpack_name = buildpacks.name")]
+    (doseq [rev revs]
+      (sql/update-values "revisions" ["id = ? and buildpack_name = ?"
+                                      (:id rev) (:buildpack_name rev)]
+                         {:published_by (get (:attributes rev) "owner")})))
+  (sql/do-commands "ALTER TABLE revisions ALTER COLUMN published_by SET NOT NULL"))
+
+(defn revisions-use-buildpack-id []
+  (sql/do-commands "ALTER TABLE revisions ADD COLUMN buildpack_id INTEGER")
+  (sql/with-query-results
+    revs [(str "SELECT revisions.id AS num, revisions.buildpack_name, "
+               " buildpacks.id FROM revisions, buildpacks"
+               " WHERE revisions.buildpack_name = buildpacks.name")]
+    (doseq [rev revs]
+      (sql/update-values "revisions" ["id = ? and buildpack_name = ?"
+                                      (:num rev) (:buildpack_name rev)]
+                         {:buildpack_id (:id rev)})))
+  (sql/do-commands "ALTER TABLE revisions ALTER COLUMN buildpack_id SET NOT NULL")
+  (sql/do-commands "ALTER TABLE revisions DROP COLUMN buildpack_name"))
 
 ;; migrations mechanics
 
@@ -99,4 +136,6 @@
            #'drop-tarball-column
            #'add-revision-id
            #'add-buildpacks-serial
-           #'add-buildpacks-org-field))
+           #'add-orgs
+           #'add-revisions-published-by
+           #'revisions-use-buildpack-id))
