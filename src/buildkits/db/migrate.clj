@@ -58,6 +58,16 @@
     (sql/with-query-results _ ["SELECT setval('buildpacks_id_seq', ?)"
                                (count packs)])))
 
+(defn add-buildpacks-org-field []
+  (sql/do-commands "ALTER TABLE buildpacks ADD COLUMN org VARCHAR")
+  (sql/with-query-results packs ["SELECT id, attributes FROM buildpacks"]
+    (doseq [{:keys [id attributes]} packs
+            :let [owner (get attributes "owner")]]
+      (if (re-find #"@heroku\.com" owner)
+        (sql/update-values "buildpacks" ["id = ?" id] {:org "heroku"})
+        (throw (Exception. (str "Orphaned buildpack from " attributes))))))
+  (sql/do-commands "ALTER TABLE buildpacks ALTER COLUMN org SET NOT NULL"))
+
 ;; migrations mechanics
 
 (defn run-and-record [migration]
@@ -88,4 +98,5 @@
            #'populate-revisions
            #'drop-tarball-column
            #'add-revision-id
-           #'add-buildpacks-serial))
+           #'add-buildpacks-serial
+           #'add-buildpacks-org-field))
