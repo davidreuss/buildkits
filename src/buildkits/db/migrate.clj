@@ -105,6 +105,18 @@
   (sql/do-commands "ALTER TABLE revisions ALTER COLUMN buildpack_id SET NOT NULL")
   (sql/do-commands "ALTER TABLE revisions DROP COLUMN buildpack_name"))
 
+(defn kits-use-buildpack-id []
+  (sql/do-commands "ALTER TABLE kits ADD COLUMN buildpack_id INTEGER")
+  (sql/with-query-results
+    kits [(str "SELECT kits.*, buildpacks.* FROM kits, buildpacks"
+               " WHERE kits.buildpack_name = buildpacks.name")]
+    (doseq [kit kits]
+      (sql/update-values "kits" ["kit = ? and buildpack_name = ?"
+                                 (:kit kit) (:buildpack_name kit)]
+                         {:buildpack_id (:id kit)})))
+  (sql/do-commands "ALTER TABLE kits ALTER COLUMN buildpack_id SET NOT NULL")
+  (sql/do-commands "ALTER TABLE kits DROP COLUMN buildpack_name"))
+
 ;; migrations mechanics
 
 (defn run-and-record [migration]
@@ -138,4 +150,5 @@
            #'add-buildpacks-serial
            #'add-orgs
            #'add-revisions-published-by
-           #'revisions-use-buildpack-id))
+           #'revisions-use-buildpack-id
+           #'kits-use-buildpack-id))

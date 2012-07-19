@@ -25,11 +25,12 @@
   (h/clone-for [buildpack buildpacks]
                (fn [li]
                  (h/at li
-                       [:h4] (h/content (:name buildpack))
+                       [:h4] (h/content (str (:org buildpack) "/" (:name buildpack)))
                        [:form] (if kit
                                  (h/do->
                                   (h/add-class "logged-in")
-                                  (h/set-attr "action" (format "/buildkit/%s/0"
+                                  (h/set-attr "action" (format "/buildkit/%s/%s/0"
+                                                               (:org buildpack)
                                                                (:name buildpack)))
                                   (toggle-form buildpack kit)))
                        [:p.owner] (h/content (str "By " (:owner buildpack)))))))

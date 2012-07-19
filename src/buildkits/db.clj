@@ -16,7 +16,7 @@
                   (walk/keywordize-keys (into {} v)) v)])))
 
 (defn flatten [buildpack]
-  (merge (dissoc buildpack :attributes)
+  (merge (dissoc buildpack :attributes :organization_id)
          (:attributes buildpack)))
 
 (defn get-buildpack [org buildpack-name]
@@ -34,37 +34,36 @@
           " FROM buildpacks, organizations ORDER BY name")]
     (mapv (comp flatten unhstore) buildpacks)))
 
-;; TODO: kits need to be org-savvy
 (defn get-kit [name]
   (if name
     (sql/with-query-results buildpacks
       [(str "SELECT buildpacks.*, revisions.tarball"
             " FROM buildpacks, revisions, kits"
-            " WHERE revisions.buildpack_name = buildpacks.name"
+            " WHERE revisions.buildpack_id = buildpacks.id"
             " AND kits.kit = ?"
-            " AND buildpacks.name = kits.buildpack_name"
+            " AND buildpacks.id = kits.buildpack_id"
             " AND revisions.created_at IN "
             " (SELECT MAX(revisions.created_at) FROM revisions"
-            "   GROUP BY buildpack_name);") name]
+            "   GROUP BY buildpack_id);") name]
       (if (seq buildpacks)
         (mapv (comp flatten unhstore) buildpacks)))))
 
-(defn add-to-kit [username buildpack position]
-  (sql/insert-record :kits {:kit username
-                            :buildpack_name buildpack
-                            :position position}))
+(defn add-to-kit [username org buildpack-name position]
+  (let [{:keys [id]} (get-buildpack org buildpack-name)]
+    (sql/insert-record :kits {:kit username :buildpack_id id
+                              :position position})))
 
 (def defaults ["clojure" "gradle" "grails" "java" "logo" "nodejs" "php"
                "play" "python" "ruby" "scala"])
 
 (defn create-kit [name]
   (doseq [buildpack defaults]
-    (add-to-kit name buildpack 0))
+    (add-to-kit name "heroku" buildpack 0))
   (get-kit name))
 
-(defn remove-from-kit [name buildpack]
-  (sql/delete-rows :kits ["kit = ? AND org = ? AND buildpack_name = ?"
-                          name buildpack]))
+(defn remove-from-kit [kit org buildpack-name]
+  (let [{:keys [id]} (get-buildpack org buildpack-name)]
+    (sql/delete-rows :kits ["kit = ? AND buildpack_id = ?" kit id])))
 
 (defn update [username buildpack-id content]
   (sql/transaction

@@ -48,16 +48,18 @@
   (GET "/logout" []
        (assoc (res/redirect "/") :session nil))
   ;; TODO: use compojure contexts to enforce login
-  (PUT "/buildkit/:buildpack/:pos" [buildpack pos :as {{:keys [username]} :session}]
+  (PUT "/buildkit/:org/:buildpack/:pos" [org buildpack pos :as
+                                         {{:keys [username]} :session}]
        (if username
          (do (sql/with-connection db/db
-               (db/add-to-kit username buildpack (Integer. pos)))
+               (db/add-to-kit username org buildpack (Integer. pos)))
              (res/redirect "/"))
          {:status 403}))
-  (DELETE "/buildkit/:buildpack/:pos" [buildpack :as {{:keys [username]} :session}]
+  (DELETE "/buildkit/:org/:buildpack/:pos" [org buildpack :as
+                                            {{:keys [username]} :session}]
           (if username
             (do (sql/with-connection db/db
-                  (db/remove-from-kit username buildpack))
+                  (db/remove-from-kit username org buildpack))
                 (res/redirect "/"))
             {:stauts 403}))
   (ANY "/*" {:as req}
