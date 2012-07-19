@@ -45,6 +45,19 @@
   (sql/do-commands (str "ALTER TABLE revisions ADD COLUMN id INTEGER"
                         " NOT NULL DEFAULT 1")))
 
+(defn add-buildpacks-serial []
+  (sql/do-commands "ALTER TABLE buildpacks ADD COLUMN id INTEGER")
+  (sql/with-query-results packs ["SELECT name FROM buildpacks"]
+    (doseq [[id pack] (map-indexed vector packs)]
+      (sql/update-values "buildpacks" ["name = ?" (:name pack)] {:id id}))
+    (sql/do-commands "CREATE SEQUENCE buildpacks_id_seq"
+                     (str "ALTER TABLE buildpacks ALTER COLUMN id"
+                          " SET DEFAULT nextval('buildpacks_id_seq')")
+                     "ALTER TABLE buildpacks ALTER COLUMN id SET NOT NULL"
+                     "ALTER SEQUENCE buildpacks_id_seq OWNED BY buildpacks.id")
+    (sql/with-query-results _ ["SELECT setval('buildpacks_id_seq', ?)"
+                               (count packs)])))
+
 ;; migrations mechanics
 
 (defn run-and-record [migration]
@@ -74,4 +87,5 @@
            #'add-revisions-table
            #'populate-revisions
            #'drop-tarball-column
-           #'add-revision-id))
+           #'add-revision-id
+           #'add-buildpacks-serial))
