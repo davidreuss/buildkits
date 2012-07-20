@@ -51,7 +51,6 @@ cat $detected_buildpacks | while read buildpack_and_name; do
             end
           end
         " >> $compile_dir/.profile.d/$shortname.sh
-      echo "done"
     fi
   fi
 
