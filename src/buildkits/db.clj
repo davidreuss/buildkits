@@ -81,5 +81,6 @@
      ["SELECT id FROM organizations WHERE name = ?" org]
      (let [{:keys [id]} (sql/insert-record :buildpacks
                                            {:name buildpack-name
+                                            :attributes (hstore {:owner username})
                                             :organization_id id})]
        (update username id content)))))
