@@ -11,3 +11,5 @@ pom.xml
 /.env
 /pg
 /work
+/.lein-env
+/.slugignore

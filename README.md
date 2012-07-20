@@ -34,9 +34,9 @@ You can use Anvil to test buildpacks without publishing them:
 
 Once you're happy with your buildpack, you can publish it for others
 to use with the
-[heroku buildpacks plugin](https://github.com/ddollar/heroku-buildpacks):
+[heroku buildpacks plugin](https://github.com/heroku/heroku-buildpacks):
 
-    $ heroku plugins:install https://github.com/ddollar/heroku-buildpacks
+    $ heroku plugins:install https://github.com/heroku/heroku-buildpacks
     $ cd heroku-buildpack-clojure
     $ heroku buildpacks:publish clojure
     Publishing clojure buildpack... done

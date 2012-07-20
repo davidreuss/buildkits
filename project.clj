@@ -15,9 +15,11 @@
                  [org.clojure/java.jdbc "0.2.1"]
                  [org.clojure/data.codec "0.1.0"]
                  [net.java.dev.jets3t/jets3t "0.9.0"]
+                 [environ "0.2.1"]
                  [com.heroku.api/heroku-api "0.9"]
                  [com.heroku.api/heroku-json-jackson "0.9"]
                  [com.heroku.api/heroku-http-apache "0.9"]
                  [org.apache.commons/commons-compress "1.4.1"]]
-  ;; jetty really doesn't like the bootclasspath
+  :plugins [[environ/environ.lein "0.2.1"]]
+  :hooks [environ.leiningen.hooks]
   :profiles {:dev {:bootclasspath false}})

@@ -1,12 +1,58 @@
-#!/bin/sh
+#!/bin/bash
 
-BUILDPACKS_DIR="$(dirname $0)/../buildpacks"
-DETECTED_BUILDPACKS="$1/.detected_buildpacks"
+compile_dir=$1
+cache_dir=$2
 
-cat $DETECTED_BUILDPACKS | while read BUILDPACK_AND_NAME; do
-  BUILDPACK=${BUILDPACK_AND_NAME%%:*}
-  NAME=${BUILDPACK_AND_NAME#*:}
-  echo "-----> Compiling for ${NAME}"
-  cd $1
-  $BUILDPACK/bin/compile $1 $2
+buildpacks_dir="$(dirname $0)/../buildpacks"
+detected_buildpacks="$1/.detected_buildpacks"
+
+cat $detected_buildpacks | while read buildpack_and_name; do
+  buildpack=${buildpack_and_name%%:*}
+  name=${buildpack_and_name#*:}
+  shortname=$(basename $buildpack)
+
+  # scan .profile.d so we can detect changes
+  profiled_scan_old="$(ls -la $compile_dir/.profile.d/ 2>&1 || echo "empty")"
+
+  # compile
+  echo "-----> Compiling for $name"
+  cd $compile_dir; $buildpack/bin/compile $compile_dir $cache_dir
+
+  # scan .profile.d so we can detect changes
+  profiled_scan_new="$(ls -la $compile_dir/.profile.d/ 2>&1 || echo "empty")"
+
+  # if profile.d has not been written, let's generate one from bin/release
+  # to work around old buildpacks
+  if [ "$profiled_scan_old" == "$profiled_scan_new" ]; then
+    if [ -x $buildpack/bin/release ]; then
+      mkdir -p $compile_dir/.profile.d
+
+      # read config_vars from yaml and create a profile.d
+      # script instead. special-case handling for PATH
+      # used to inject $HOME in the right places
+      $buildpack/bin/release $compile_dir | \
+        ruby -ryaml -e "
+          release = YAML.load(STDIN.read)  || {}
+          vars    = release['config_vars'] || {}
+
+          vars.each do |key, value|
+            if key == 'PATH'
+              # add HOME to relative PATHs
+              value = value.split(':').map do |part|
+                case part[0..0]
+                  when '/' then part
+                  else \"\$HOME/#{part}\"
+                end
+              end.join(':')
+
+              puts %{export #{key}=\"#{value}\"}
+            else
+              puts %{export #{key}=\${#{key}:-#{value}}}
+            end
+          end
+        " >> $compile_dir/.profile.d/$shortname.sh
+      echo "done"
+    fi
+  fi
+
 done

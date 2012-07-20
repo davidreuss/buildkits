@@ -4,6 +4,7 @@
             [clojure.java.jdbc :as sql]
             [cheshire.core :as json]
             [clojure.data.codec.base64 :as base64]
+            [environ.core :as env]
             [compojure.core :refer [defroutes GET PUT POST DELETE ANY]])
   (:import (org.jets3t.service.security AWSCredentials)
            (org.jets3t.service.acl AccessControlList)
@@ -24,9 +25,9 @@
     (boolean member)))
 
 (defn s3-put [org buildpack-name content]
-  (when-let [access_key (System/getenv "AWS_ACCESS_KEY")]
+  (when-let [access_key (env/env :aws-access-key)]
     (let [s3 (RestS3Service. (AWSCredentials. access_key
-                                              (System/getenv "AWS_SECRET_KEY")))
+                                              (env/env :aws-secret-key)))
           bucket (or (System/getenv "AWS_BUCKET") "buildkits-dev")
           key (format "buildpacks/%s/%s.tgz" org buildpack-name)
           obj (doto (S3Object. key content)
